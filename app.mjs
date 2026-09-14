@@ -11,7 +11,7 @@ let practice = false, bothMode = false;
 let notes = [], effects = [], startAt = 0, songTime = 0;
 let stats = { perfect: 0, good: 0, miss: 0, combo: 0, maxCombo: 0, score: 0 };
 let landmarker = null, stream = null, lastVideoTime = -1;
-let eye = { L: false, R: false, pendingAt: 0, armed: true };
+let eye = { L: false, R: false, both: false, pendingAt: 0, armed: true };
 let calib = { L: false, R: false, startedAt: 0 };
 let faceBest = null, faceWorst = null;
 let audioCtx = null, schedulerId = 0, nextBeat = 0, beatIndex = 0;
@@ -83,7 +83,7 @@ function makeChart() {
 
 // ---------- flow ----------
 function show(id, on = true) { $(id).classList.toggle('hidden', !on); }
-function setMode(m) { mode = m; show('startPanel', m === 'idle'); show('setupPanel', m === 'setup'); show('hud', m === 'playing' || m === 'countdown'); show('resultPanel', m === 'result'); show('countdown', m === 'countdown'); }
+function setMode(m) { mode = m; $('phone').classList.toggle('setup', m === 'setup'); show('startPanel', m === 'idle'); show('setupPanel', m === 'setup'); show('hud', m === 'playing' || m === 'countdown' || m === 'setup'); show('resultPanel', m === 'result'); show('countdown', m === 'countdown'); }
 
 $('play').onclick = () => { ensureAudio(); practice = false; startSetup(); };
 $('practice').onclick = () => { ensureAudio(); practice = true; bothMode = false; stopCamera(); beginCountdown(); };
@@ -160,21 +160,29 @@ let judgeTimer = 0;
 function judge(text) { const j = $('judge'); j.textContent = text; j.classList.add('show'); clearTimeout(judgeTimer); judgeTimer = setTimeout(() => j.classList.remove('show'), 350); }
 function updateHud() { $('score').textContent = stats.score; $('combo').textContent = stats.combo; }
 
-// eye state machine: classify a closure ~70 ms after it starts so double blinks read as "both"
-function handleEyes(l, r) {
-  const L = l > 0.5, R = r > 0.5;
-  $('eyeL').classList.toggle('on', L); $('eyeR').classList.toggle('on', R);
+// eye state machine. Wink = one eye clearly more closed than the other; both = both closed together.
+// Scores are smoothed a little; thresholds are relative so people with "lazy" winks still register.
+let smL = 0, smR = 0;
+function handleEyes(rawL, rawR) {
+  smL += (rawL - smL) * 0.5; smR += (rawR - smR) * 0.5;
+  const l = smL, r = smR;
+  const both = l > 0.38 && r > 0.38 && Math.abs(l - r) < 0.3;
+  const L = !both && l > 0.3 && l - r > 0.18;
+  const R = !both && r > 0.3 && r - l > 0.18;
+  $('eyeL').classList.toggle('on', L || both); $('eyeR').classList.toggle('on', R || both);
+  if (mode === 'setup') $('setupText').textContent = `left ${l.toFixed(2)} · right ${r.toFixed(2)} — close one eye at a time, keep the other open.`;
   const now = performance.now();
-  if (!L && !R) { eye.armed = true; eye.pendingAt = 0; eye.L = eye.R = false; return; }
+  const closed = L || R || both;
+  if (!closed) { eye.armed = true; eye.pendingAt = 0; eye.L = eye.R = false; eye.both = false; return; }
   if (!eye.armed) return;
   if (!eye.pendingAt) eye.pendingAt = now;
-  eye.L = eye.L || L; eye.R = eye.R || R;
+  eye.L = eye.L || L; eye.R = eye.R || R; eye.both = eye.both || both;
   if (now - eye.pendingAt >= 70) {
     eye.armed = false;
-    const both = eye.L && eye.R;
-    if (mode === 'setup') { if (!both && eye.L) { calib.L = true; $('calL').classList.add('ok'); } if (!both && eye.R) { calib.R = true; $('calR').classList.add('ok'); } if (calib.L && calib.R) show('startRound'); }
-    else if (mode === 'playing') fire(bothMode ? 2 : both ? 2 : eye.L ? 0 : 1);
-    eye.L = eye.R = false;
+    const isBoth = eye.both || (eye.L && eye.R);
+    if (mode === 'setup') { if (!isBoth && eye.L) { calib.L = true; $('calL').classList.add('ok'); } if (!isBoth && eye.R) { calib.R = true; $('calR').classList.add('ok'); } if (calib.L && calib.R) show('startRound'); }
+    else if (mode === 'playing') fire(bothMode ? 2 : isBoth ? 2 : eye.L ? 0 : 1);
+    eye.L = eye.R = false; eye.both = false;
   }
 }
 // tap practice: left third = left eye, right third = right eye, middle = both

@@ -44,3 +44,5 @@ h2 { font-size: 24px; margin: 8px 0 8px; }
 .faces div { text-align: center; }
 .faces canvas { width: 120px; height: 150px; border-radius: 14px; background: #eee; display: block; border: 3px solid #fff; box-shadow: 0 6px 18px rgba(0,0,0,.15); }
 .faces span { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); display: block; margin-top: 6px; }
+
+.phone.setup .hud-top, .phone.setup .judge { display: none; }
