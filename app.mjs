@@ -17,7 +17,7 @@ let faceBest = null, faceWorst = null, confetti = [], confettiAt = 0;
 let audioCtx = null, schedulerId = 0, nextBeat = 0, beatIndex = 0;
 
 // ---------- people (one walk image + reaction images per character) ----------
-const PEOPLE = [{ walk: 'assets/people/p01-walk.png', good: 'assets/people/p01-good.png', down: 'assets/people/p01-down.png' }];
+const PEOPLE = Array.from({ length: 10 }, (_, i) => { const n = String(i + 1).padStart(2, '0'); return { walk: `assets/people/p${n}-walk.png`, down: `assets/people/p${n}-down.png` }; });
 const IMG = {};
 function loadImg(src) { if (IMG[src]) return IMG[src]; const i = new Image(); i.src = src; IMG[src] = i; return i; }
 PEOPLE.forEach((p) => Object.values(p).forEach(loadImg));
@@ -94,7 +94,8 @@ function makeChart() {
     if (rnd() < 0.65) lane = 1 - lane;
     list.push({ t, lane });
   }
-  return list.map((n, i) => ({ ...n, id: i, hit: null, who: i % PEOPLE.length, who2: (i + 1) % PEOPLE.length }));
+  let prev = -1;
+  return list.map((n, i) => { let who; do { who = Math.floor(rnd() * PEOPLE.length); } while (who === prev); prev = who; let who2 = (who + 1 + Math.floor(rnd() * (PEOPLE.length - 1))) % PEOPLE.length; return { ...n, id: i, hit: null, who, who2 }; });
 }
 
 // ---------- flow ----------
@@ -270,27 +271,27 @@ function draw() {
   if (mode !== 'playing') return;
   ctx.font = '44px system-ui'; ctx.textBaseline = 'middle';
   const walkAnim = (n, k) => { const step = songTime * 7 + n.id; return { rot: Math.sin(step) * 0.06, bob: Math.abs(Math.sin(step)) * 8, scale: 0.72 + 0.28 * k }; };
-  const drawWalker = (n, x, y, k, alpha = 1) => { const a = walkAnim(n, k); if (!sprite(PEOPLE[n.who].walk, x, y + 70 - a.bob, { rot: a.rot, scale: a.scale, alpha })) { ctx.globalAlpha = alpha; ctx.fillText(n.lane === 1 ? '😐' : '🙂', x, y); ctx.globalAlpha = 1; } };
+  const drawWalker = (n, x, y, k, alpha = 1, who = n.who) => { const a = walkAnim(n, k); if (!sprite(PEOPLE[who].walk, x, y + 70 - a.bob, { rot: a.rot, scale: a.scale, alpha })) { ctx.globalAlpha = alpha; ctx.fillText(n.lane === 1 ? '😐' : '🙂', x, y); ctx.globalAlpha = 1; } };
   for (const n of notes) {
     const dt = n.t - songTime; if (dt > LEAD || dt < -1.1) continue;
     const k = 1 - dt / LEAD, y = hy - (dt / LEAD) * (hy + 60);
     const lanes = n.lane === 2 ? [0, 1] : [n.lane];
-    if (n.hit === 'miss') { const m = Math.min(1, (songTime - n.t) / 0.7); for (const l of lanes) drawWalker(n, LANE_X[l], hy + m * 120, 1, 1 - m); continue; }
+    if (n.hit === 'miss') { const m = Math.min(1, (songTime - n.t) / 0.7); for (const l of lanes) drawWalker(n, LANE_X[l], hy + m * 120, 1, 1 - m, l === 1 && n.lane === 2 ? n.who2 : n.who); continue; }
     if (n.hit) {
       const m = Math.min(1, (songTime - n.hitAt) / 0.8);
       for (const l of lanes) {
-        const x = LANE_X[l], dir = l === 0 ? -1 : 1;
+        const x = LANE_X[l], dir = l === 0 ? -1 : 1, who = l === 1 && n.lane === 2 ? n.who2 : n.who;
         if (n.hit === 'perfect') { // swoon and topple sideways, face to the floor
           const rot = dir * Math.min(1, m * 1.6) * Math.PI / 2;
-          if (!sprite(PEOPLE[n.who].down, x + dir * m * 26, hy + 70 + m * 10, { rot, alpha: 1 - Math.max(0, m - 0.75) * 4 })) { ctx.globalAlpha = 1 - m; ctx.fillText('😍', x, hy - m * 60); ctx.globalAlpha = 1; }
+          if (!sprite(PEOPLE[who].down, x + dir * m * 26, hy + 70 + m * 10, { rot, alpha: 1 - Math.max(0, m - 0.75) * 4 })) { ctx.globalAlpha = 1 - m; ctx.fillText('😍', x, hy - m * 60); ctx.globalAlpha = 1; }
         } else { // good: blush, wobble, fade
-          if (!sprite(PEOPLE[n.who].good, x, hy + 70, { rot: Math.sin(m * 12) * 0.08 * (1 - m), alpha: 1 - Math.max(0, m - 0.5) * 2 })) { ctx.globalAlpha = 1 - m; ctx.fillText('☺️', x, hy - m * 40); ctx.globalAlpha = 1; }
+          if (!sprite(PEOPLE[who].down, x, hy + 70, { rot: Math.sin(m * 12) * 0.08 * (1 - m), alpha: 1 - Math.max(0, m - 0.5) * 2 })) { ctx.globalAlpha = 1 - m; ctx.fillText('☺️', x, hy - m * 40); ctx.globalAlpha = 1; }
         }
       }
       continue;
     }
     if (n.lane === 2) { ctx.fillStyle = 'rgba(181,140,255,.22)'; roundRect(LANE_X[0] - 60, y - 40, LANE_X[1] - LANE_X[0] + 120, 110, 40); ctx.fill(); }
-    for (const l of lanes) drawWalker(n, LANE_X[l], y, k);
+    for (const l of lanes) drawWalker(n, LANE_X[l], y, k, 1, l === 1 && n.lane === 2 ? n.who2 : n.who);
   }
   // hearts and sparks
   for (const e of effects) {
