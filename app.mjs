@@ -182,16 +182,16 @@ function endRound() {
 }
 
 // ---------- input ----------
-const DETECT_LAG = 0.09; // camera + model latency, seconds
+const DETECT_LAG = 0.04; // small camera + model latency, seconds
 function fire(lane, at = songTime) {
   if (mode !== 'playing') return;
-  const t = at; let best = null, bestD = GOOD * 1.5 + 1e-9;
+  const t = at, t2 = songTime; // closure start vs confirmation: judge by whichever is closer to the note let best = null, bestD = GOOD * 1.5 + 1e-9;
   for (const n of notes) {
     if (n.hit) continue;
     const win = n.id < 2 ? GOOD * 1.5 : GOOD; // warm-up: the first two are forgiving
     if (!bothMode && !(n.lane === lane || (n.lane === 2 && lane === 2))) continue;
     if (!bothMode && n.lane === 2 && lane !== 2) continue;
-    const d = Math.abs(n.t - t); if (d <= win && d < bestD) { bestD = d; best = n; }
+    const d = Math.min(Math.abs(n.t - t), Math.abs(n.t - t2)); if (d <= win && d < bestD) { bestD = d; best = n; }
   }
   if (!best) { if (DEBUG) dlog('no note in window'); return; }
   const grade = bestD <= PERFECT ? 'perfect' : 'good';
@@ -214,6 +214,7 @@ function updateHud() { $('score').textContent = stats.score; $('combo').textCont
 let smL = 0, smR = 0, faceAt = 0;
 let eyePos = { L: null, R: null }; // canvas coords of the player's eyes
 let hearts = [];
+let pulse = [0, 0]; // seconds since the last wink on each lane, for the heartbeat rings
 function handleEyes(rawL, rawR) {
   faceAt = performance.now();
   smL += (rawL - smL) * 0.5; smR += (rawR - smR) * 0.5;
@@ -243,6 +244,7 @@ $('phone').addEventListener('pointerdown', (e) => {
   const lane = x < 0.38 ? 0 : x > 0.62 ? 1 : 2;
   $('eyeL').classList.toggle('on', lane !== 1); $('eyeR').classList.toggle('on', lane !== 0);
   setTimeout(() => { $('eyeL').classList.remove('on'); $('eyeR').classList.remove('on'); }, 120);
+  if (lane === 2) pulse = [0, 0]; else pulse[lane] = 0;
   fire(lane);
 });
 
@@ -326,9 +328,13 @@ function drawInner() {
   for (const x of LANE_X) { ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 2; ctx.setLineDash([6, 10]); ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); ctx.setLineDash([]); }
   // judge targets
   const hy = H * HIT_Y;
-  for (const x of LANE_X) { ctx.beginPath(); ctx.arc(x, hy, 34, 0, TAU); ctx.strokeStyle = '#ffb3c8'; ctx.lineWidth = 4; ctx.stroke(); }
+  LANE_X.forEach((x, i) => {
+    pulse[i] += dt; const k = Math.min(1, pulse[i] / 0.5), beat = Math.sin(Math.min(1, pulse[i] / 0.18) * Math.PI); // quick swell then settle
+    heartPath(x, hy, 36 * (1 + beat * 0.22)); ctx.strokeStyle = '#ffb3c8'; ctx.lineWidth = 3.5; ctx.stroke();
+    if (k < 1) { ctx.globalAlpha = 1 - k; heartPath(x, hy, 36 * (1 + k * 1.1)); ctx.strokeStyle = '#ff5c8a'; ctx.lineWidth = 3 * (1 - k) + 0.5; ctx.stroke(); ctx.globalAlpha = 1; } // expanding echo, like a heartbeat
+  });
   ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = '700 11px system-ui'; ctx.textAlign = 'center';
-  ctx.fillText('LEFT EYE', LANE_X[0], hy + 56); ctx.fillText('RIGHT EYE', LANE_X[1], hy + 56);
+  ctx.fillText('LEFT EYE', LANE_X[0], hy + 58); ctx.fillText('RIGHT EYE', LANE_X[1], hy + 58);
   if (mode !== 'playing') return;
   ctx.font = '44px system-ui'; ctx.textBaseline = 'middle';
   const walkAnim = (n, k) => { const step = songTime * 7 + n.id; return { rot: Math.sin(step) * 0.06, bob: Math.abs(Math.sin(step)) * 8, scale: 0.72 + 0.28 * k }; };
@@ -368,6 +374,13 @@ function drawInner() {
   effects = effects.filter((e) => songTime - e.at < 0.7);
   drawHearts(dt);
   ctx.textBaseline = 'alphabetic';
+}
+function heartPath(cx, cy, r) { // simple heart outline, r ≈ half width
+  ctx.beginPath(); const top = cy - r * 0.55;
+  ctx.moveTo(cx, cy + r * 0.85);
+  ctx.bezierCurveTo(cx - r * 1.35, cy - r * 0.05, cx - r * 0.95, top - r * 0.75, cx, top);
+  ctx.bezierCurveTo(cx + r * 0.95, top - r * 0.75, cx + r * 1.35, cy - r * 0.05, cx, cy + r * 0.85);
+  ctx.closePath();
 }
 function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
 
