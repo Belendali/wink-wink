@@ -12,7 +12,7 @@ let notes = [], effects = [], startAt = 0, songTime = 0;
 let stats = { perfect: 0, good: 0, miss: 0, combo: 0, maxCombo: 0, score: 0 };
 let landmarker = null, stream = null, lastVideoTime = -1;
 let eye = { L: false, R: false, both: false, pendingAt: 0, armed: true };
-let calib = { L: false, R: false, startedAt: 0 };
+let blinkStats = { both: 0, single: 0 }; // auto fallback: only double blinks → both-eyes mode
 let faceBest = null, faceWorst = null, confetti = [], confettiAt = 0;
 let audioCtx = null, schedulerId = 0, nextBeat = 0, beatIndex = 0;
 
@@ -117,10 +117,10 @@ async function startSetup() {
   } catch (e) {
     $('setupTitle').textContent = 'Camera blocked'; $('setupText').textContent = 'Allow the camera in your browser, then reload. Or try tap practice.'; return;
   }
-  $('setupKicker').textContent = 'QUICK CHECK'; $('setupTitle').textContent = 'Wink at me.'; $('setupText').textContent = 'Close one eye at a time. Keep the other open.';
-  calib = { L: false, R: false, startedAt: performance.now() }; $('calL').classList.remove('ok'); $('calR').classList.remove('ok');
-  show('calib'); bothMode = false;
-  setTimeout(() => { if (mode === 'setup' && !(calib.L && calib.R)) show('bothMode'); }, 6000);
+  $('setupTitle').textContent = 'Looking for your face…'; $('setupText').textContent = 'Hold the phone at arm\'s length.';
+  bothMode = false; blinkStats = { both: 0, single: 0 };
+  const started = performance.now();
+  const wait = setInterval(() => { if (mode !== 'setup') { clearInterval(wait); return; } if (performance.now() - faceAt < 300 || performance.now() - started > 8000) { clearInterval(wait); beginCountdown(); } }, 100);
 }
 async function loadLandmarker() {
   if (landmarker) return;
@@ -194,7 +194,6 @@ function handleEyes(rawL, rawR) {
   const L = !both && l > 0.3 && l - r > 0.18;
   const R = !both && r > 0.3 && r - l > 0.18;
   $('eyeL').classList.toggle('on', L || both); $('eyeR').classList.toggle('on', R || both);
-  if (mode === 'setup') { $('setupTitle').textContent = 'Wink at me.'; $('setupText').textContent = `left ${l.toFixed(2)} · right ${r.toFixed(2)} — close one eye at a time, keep the other open.`; }
   const now = performance.now();
   const closed = L || R || both;
   if (!closed) { eye.armed = true; eye.pendingAt = 0; eye.L = eye.R = false; eye.both = false; return; }
@@ -204,8 +203,7 @@ function handleEyes(rawL, rawR) {
   if (now - eye.pendingAt >= 70) {
     eye.armed = false;
     const isBoth = eye.both || (eye.L && eye.R);
-    if (mode === 'setup') { shootHearts(isBoth ? 2 : eye.L ? 0 : 1, 2); if (!isBoth && eye.L) { calib.L = true; $('calL').classList.add('ok'); } if (!isBoth && eye.R) { calib.R = true; $('calR').classList.add('ok'); } if (calib.L && calib.R) show('startRound'); }
-    else if (mode === 'playing') { const lane = bothMode ? 2 : isBoth ? 2 : eye.L ? 0 : 1; shootHearts(lane, 3); fire(lane); }
+    if (mode === 'playing') { if (isBoth) blinkStats.both++; else blinkStats.single++; if (!bothMode && blinkStats.both >= 4 && blinkStats.single === 0) { bothMode = true; judge('BOTH EYES MODE'); } const lane = bothMode ? 2 : isBoth ? 2 : eye.L ? 0 : 1; shootHearts(lane, 3); fire(lane); }
     eye.L = eye.R = false; eye.both = false;
   }
 }
@@ -325,7 +323,7 @@ function loop() {
         const mid = (a, b) => { const p = toC(a), q = toC(b); return { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 }; };
         eyePos = { L: mid(159, 145), R: mid(386, 374) }; }
       if (bs) { const get = (name) => (bs.categories.find((c) => c.categoryName === name) || {}).score || 0; handleEyes(get('eyeBlinkLeft'), get('eyeBlinkRight')); }
-      else if (mode === 'setup' && performance.now() - faceAt > 600) { $('setupTitle').textContent = 'Looking for your face…'; $('setupText').textContent = 'Hold the phone at arm\'s length, face in the middle.'; $('eyeL').classList.remove('on'); $('eyeR').classList.remove('on'); }
+
     } catch (e) { /* skip frame */ }
   }
   if (mode === 'playing') {
