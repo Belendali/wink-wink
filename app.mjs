@@ -98,7 +98,7 @@ function sfx(kind) {
 
 // ---------- chart ----------
 function makeChart() {
-  const list = []; let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
+  const list = []; let seed = Math.floor(Math.random() * 233280); const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280; // fresh pattern every round
   const beats = Math.floor(SONG / BEAT);
   let lane = 0, lastDouble = -9;
   for (let b = 4; b < beats - 1; b++) {
@@ -109,8 +109,11 @@ function makeChart() {
     if (rnd() < 0.65) lane = 1 - lane;
     list.push({ t, lane });
   }
+  // casting: a shuffled deck of all ten, dealt without replacement, reshuffled when empty (no one repeats until everyone has walked by)
+  let deck = [];
+  const deal = (avoid) => { if (!deck.length) { deck = PEOPLE.map((_, i) => i); for (let i = deck.length - 1; i > 0; i--) { const j = Math.floor(rnd() * (i + 1)); [deck[i], deck[j]] = [deck[j], deck[i]]; } if (deck[deck.length - 1] === avoid && deck.length > 1) [deck[0], deck[deck.length - 1]] = [deck[deck.length - 1], deck[0]]; } return deck.pop(); };
   let prev = -1;
-  return list.map((n, i) => { let who; do { who = Math.floor(rnd() * PEOPLE.length); } while (who === prev); prev = who; let who2 = (who + 1 + Math.floor(rnd() * (PEOPLE.length - 1))) % PEOPLE.length; return { ...n, id: i, hit: null, who, who2 }; });
+  return list.map((n, i) => { const who = deal(prev); const who2 = n.lane === 2 ? deal(who) : who; prev = who2; return { ...n, id: i, hit: null, who, who2 }; });
 }
 
 // ---------- flow ----------
@@ -316,7 +319,7 @@ function drawInner() {
       const HOLD = 2.2, age = (performance.now() - showAt) / 1000;
       if (age > HOLD) { showIdx = (showIdx + 1) % showcase.length; showAt = performance.now(); if (showcase.length > 1) sfx('good'); }
       const who = showcase[showIdx], k = Math.min(1, age / 0.35), ease = 1 - Math.pow(1 - k, 3);
-      const bigH = H * 1.05, scale = bigH / PERSON_H;                     // upper half in frame, feet below the bottom edge
+      const bigH = H * 0.88, scale = bigH / PERSON_H;                     // upper half in frame, feet below the bottom edge
       const baseY = H + bigH * 0.5 + (1 - ease) * bigH * 0.5;              // slides up from below
       const sway = Math.sin(age * 4.2) * 0.07 * (1 - Math.max(0, age - HOLD + 0.3) / 0.3); // rocks left and right
       ctx.save(); ctx.translate(W / 2, baseY); ctx.rotate(sway); ctx.translate(-W / 2, -baseY);
