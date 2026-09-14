@@ -38,7 +38,12 @@ function resize() {
   canvas.width = W * DPR; canvas.height = H * DPR;
   ctx.setTransform(DPR, 0, 0, DPR, 0, 0);
 }
-window.addEventListener('resize', resize); resize();
+window.addEventListener('resize', resize); window.addEventListener('orientationchange', () => setTimeout(resize, 60)); if (window.visualViewport) visualViewport.addEventListener('resize', resize); resize();
+function checkSize() { // mobile browsers settle their viewport after load; keep the canvas buffer matched to the frame or the picture looks squashed
+  const r = $('phone').getBoundingClientRect(); if (!r.width) return;
+  const want = Math.round(W * r.height / r.width); const dpr = Math.min(2, window.devicePixelRatio || 1);
+  if (Math.abs(want - H) > 1 || dpr !== DPR) resize();
+}
 
 // ---------- audio (synthesized) ----------
 function ensureAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
@@ -400,7 +405,7 @@ function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.a
 
 // ---------- loop ----------
 function loop() {
-  requestAnimationFrame(loop);
+  requestAnimationFrame(loop); checkSize();
   if (mode === 'playing') songTime = audioCtx.currentTime - startAt;
   if (landmarker && stream && video.readyState >= 2 && video.currentTime !== lastVideoTime && ['setup', 'howto', 'playing', 'countdown'].includes(mode)) {
     lastVideoTime = video.currentTime;

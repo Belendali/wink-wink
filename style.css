@@ -1,8 +1,8 @@
 :root { --bg: #1a0f2e; --card: #fff7fb; --ink: #2a1740; --dim: #7a6690; --pink: #ff5c8a; --pink2: #ffb3c8; --lav: #b58cff; --yellow: #ffe052; --line: rgba(42,23,64,.12); }
 * { box-sizing: border-box; }
-html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: -apple-system, "Helvetica Neue", Inter, system-ui, sans-serif; overflow: hidden; }
+html, body { margin: 0; height: 100%; height: 100dvh; background: var(--bg); color: var(--ink); font-family: -apple-system, "Helvetica Neue", Inter, system-ui, sans-serif; overflow: hidden; }
 #app { height: 100%; display: flex; align-items: center; justify-content: center; }
-.phone { position: relative; width: min(100vw, calc(100vh * 9 / 16)); height: min(100vh, calc(100vw * 16 / 9)); overflow: hidden; background: #2a1740; }
+.phone { position: relative; width: min(100vw, calc(100vh * 9 / 16)); height: min(100vh, calc(100vw * 16 / 9)); width: min(100vw, calc(100dvh * 9 / 16)); height: min(100dvh, calc(100vw * 16 / 9)); overflow: hidden; background: #2a1740; }
 .cam { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); filter: saturate(.9); }
 .scene { position: absolute; inset: 0; width: 100%; height: 100%; }
 .hidden { display: none !important; }
