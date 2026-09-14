@@ -2,7 +2,7 @@
 const $ = (id) => document.getElementById(id);
 const video = $('cam'), canvas = $('scene'), ctx = canvas.getContext('2d');
 const W = 390; let H = 693, DPR = 1;
-const BPM = 100, BEAT = 60 / BPM, SONG = 15, LEAD = 1.7;
+const BPM = 88, BEAT = 60 / BPM, SONG = 15, LEAD = 1.8;
 const PERFECT = 0.15, GOOD = 0.3;
 const LANE_X = [W * 0.28, W * 0.72], HIT_Y = 0.74;
 
@@ -56,6 +56,7 @@ function noise(t, dur, gain = 0.08) {
   s.connect(f).connect(g).connect(audioCtx.destination); s.start(t);
 }
 const BASS = [55, 55, 82, 73, 55, 55, 98, 82];
+const MELODY = [523, 659, 784, 659, 587, 523, 659, 0, 523, 784, 880, 784, 659, 587, 523, 0];
 function scheduleBeats() {
   const now = audioCtx.currentTime;
   while (nextBeat < now + 0.25) {
@@ -64,32 +65,33 @@ function scheduleBeats() {
     noise(nextBeat + BEAT / 2, 0.05);                             // hat
     if (i % 2 === 1) noise(nextBeat, 0.12, 0.12);                 // snare-ish
     tone(BASS[i % 8], nextBeat, BEAT * 0.9, 'square', 0.06);      // bass
-    if (i % 4 === 0) tone(523 * (i % 8 === 0 ? 1 : 1.25), nextBeat, 0.3, 'triangle', 0.08);
+    const m = MELODY[i % 16]; if (m) tone(m, nextBeat, 0.25, 'triangle', 0.07); const m2 = MELODY[(i * 2 + 1) % 16]; if (m2 && i % 2) tone(m2 * 0.5, nextBeat + BEAT / 2, 0.18, 'triangle', 0.04);
     nextBeat += BEAT; beatIndex++;
   }
   schedulerId = setTimeout(scheduleBeats, 60);
 }
 function sfx(kind) {
   if (!audioCtx) return; const t = audioCtx.currentTime;
-  if (kind === 'perfect') { tone(880, t, 0.12, 'triangle', 0.25); tone(1320, t + 0.06, 0.16, 'triangle', 0.2); }
-  if (kind === 'good') tone(660, t, 0.12, 'triangle', 0.2);
-  if (kind === 'miss') tone(200, t, 0.25, 'sawtooth', 0.12, 120);
+  if (kind === 'perfect') { [784, 988, 1319, 1568].forEach((f, i) => tone(f, t + i * 0.05, 0.22, 'triangle', 0.18)); tone(1200, t + 0.2, 0.5, 'sine', 0.12, 300); } // sparkle + swoon slide
+  if (kind === 'good') { tone(600, t, 0.08, 'triangle', 0.2, 900); tone(900, t + 0.06, 0.12, 'sine', 0.12); }                            // pop
+  if (kind === 'miss') { tone(220, t, 0.18, 'sawtooth', 0.1, 160); tone(160, t + 0.16, 0.25, 'sawtooth', 0.08, 90); }                    // womp womp
   if (kind === 'count') tone(660, t, 0.1, 'square', 0.12);
   if (kind === 'go') tone(990, t, 0.3, 'square', 0.14);
+  if (kind === 'win') [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.12, 0.4, 'triangle', 0.16));
 }
 
 // ---------- chart ----------
 function makeChart() {
   const list = []; let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
   const beats = Math.floor(SONG / BEAT);
-  let lane = 0;
+  let lane = 0, lastDouble = -9;
   for (let b = 2; b < beats - 1; b++) {
     const t = b * BEAT;
-    if (b % 8 === 7) { list.push({ t, lane: 2 }); continue; }           // both eyes on the 8th beat
-    if (b >= 16 && b % 2 === 0 && rnd() < 0.5) {                        // some off-beats later on
-      list.push({ t, lane }); lane = 1 - lane; list.push({ t: t + BEAT / 2, lane }); lane = 1 - lane; continue;
+    if (b % 8 === 7) { list.push({ t, lane: 2 }); continue; }                       // a couple every 8 beats: both eyes
+    if (b >= 12 && b - lastDouble > 3 && rnd() < 0.3) {                             // an occasional quick pair, late in the round
+      lastDouble = b; list.push({ t, lane }); lane = 1 - lane; list.push({ t: t + BEAT / 2, lane }); lane = 1 - lane; continue;
     }
-    if (rnd() < 0.7) { lane = 1 - lane; }
+    if (rnd() < 0.65) lane = 1 - lane;
     list.push({ t, lane });
   }
   return list.map((n, i) => ({ ...n, id: i, hit: null, who: i % PEOPLE.length, who2: (i + 1) % PEOPLE.length }));
@@ -146,7 +148,7 @@ function startRound() {
   setMode('playing'); startAt = audioCtx.currentTime + 0.1; nextBeat = startAt; beatIndex = 0; clearTimeout(schedulerId); scheduleBeats();
 }
 function endRound() {
-  clearTimeout(schedulerId); setMode('result');
+  clearTimeout(schedulerId); setMode('result'); sfx('win');
   const total = notes.length, hits = stats.perfect + stats.good, acc = total ? Math.round(hits / total * 100) : 0;
   $('rAcc').textContent = acc + '%'; $('rCombo').textContent = stats.maxCombo; $('rDown').textContent = hits; confetti = Array.from({ length: 90 }, () => ({ x: Math.random() * W, y: -Math.random() * H, vx: (Math.random() - .5) * 40, vy: 80 + Math.random() * 120, r: 4 + Math.random() * 5, c: ['#ff5c8a', '#ffb3c8', '#b58cff', '#ffe052', '#fff7fb'][Math.floor(Math.random() * 5)], a: Math.random() * TAU })); confettiAt = performance.now();
   const title = acc >= 90 ? 'Heartbreaker' : acc >= 70 ? 'Smooth operator' : acc >= 40 ? 'Still trying' : 'Someone called security';
