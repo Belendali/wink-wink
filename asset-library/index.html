@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Wink Wink — Asset library</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%23ff5c8a'/%3E%3Ctext x='20' y='29' text-anchor='middle' font-size='26'%3E%F0%9F%98%89%3C/text%3E%3C/svg%3E" />
+<style>
+  :root { --bg:#1a0f2e; --card:#fff7fb; --ink:#2a1740; --dim:#7a6690; --line:rgba(42,23,64,.12); --accent:#ff5c8a; --ghost:rgba(255,247,251,.1); --muted:rgba(255,247,251,.5); --muted2:rgba(255,247,251,.72); --navline:rgba(255,247,251,.18); --chk1:#ece4f2; --chk2:#f7f1fa; }
+
+  * { box-sizing: border-box; }
+  body { margin:0; background:var(--bg); color:var(--card); font-family: -apple-system, "Helvetica Neue", Inter, system-ui, sans-serif; }
+  .wrap { max-width: 1040px; margin: 0 auto; padding: 48px 24px 96px; }
+  .k { font-size: 11px; letter-spacing: .28em; text-transform: uppercase; color: var(--muted); }
+  h1 { font-size: 40px; margin: 10px 0 8px; letter-spacing: -.01em; }
+  .lede { color: var(--muted2); margin: 0 0 22px; max-width: 640px; line-height: 1.5; }
+  .btn { display:inline-block; background:var(--accent); color:var(--ink); font-weight:700; text-decoration:none; padding: 12px 20px; border-radius: 12px; margin: 0 8px 8px 0; }
+  .btn.ghost { background: var(--ghost); color: var(--card); font-weight: 500; }
+  nav { display:flex; gap:10px; flex-wrap:wrap; margin: 26px 0 40px; }
+  nav a { color: var(--muted2); text-decoration:none; font-size:14px; padding:6px 12px; border:1px solid var(--navline); border-radius:999px; }
+  section { margin-top: 44px; }
+  h2 { font-size: 22px; margin: 0 0 4px; }
+  .sub { color: var(--muted2); font-size: 14px; margin: 0 0 16px; line-height: 1.5; max-width: 720px; }
+  .grid { display:grid; grid-template-columns: repeat(auto-fit, minmax(240px, 1fr)); gap: 16px; }
+  .grid.tight { grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 12px; }
+  .card { background: var(--card); color: var(--ink); border-radius: 18px; padding: 16px; }
+  .card .pv { border-radius: 12px; overflow:hidden; background: repeating-conic-gradient(var(--chk1) 0 25%, var(--chk2) 0 50%) 0 0/20px 20px; aspect-ratio: 1; display:flex; align-items:center; justify-content:center; }
+  .card .pv.dark { background: repeating-conic-gradient(#2a2a3a 0 25%, #333346 0 50%) 0 0/20px 20px; }
+  .card .pv img { max-width: 100%; max-height: 100%; display:block; }
+  .card b { display:block; margin: 12px 0 2px; font-size: 15px; }
+  .card p { margin: 0; font-size: 13px; color: var(--dim); line-height: 1.5; }
+  .card .row { display:flex; gap:8px; margin-top: 12px; flex-wrap: wrap; }
+  .card .row a { font-size: 13px; color: var(--ink); text-decoration:none; border:1px solid var(--line); border-radius: 999px; padding: 6px 12px; }
+  .strip { display:grid; grid-template-columns: repeat(3, 1fr); gap: 6px; }
+  .strip.two { grid-template-columns: repeat(2, 1fr); }
+  .strip figure { margin:0; text-align:center; }
+  .strip figcaption { font-size: 11px; color: var(--dim); margin-top: 4px; letter-spacing: .08em; text-transform: uppercase; }
+  .swatches { display:grid; grid-template-columns: repeat(auto-fit, minmax(120px,1fr)); gap: 10px; }
+  .sw { border-radius: 14px; padding: 14px 12px; color: #111; font-size: 12px; font-family: ui-monospace, Menlo, monospace; }
+  .sw.dark { color: #fffdf0; }
+  table { width:100%; border-collapse: collapse; background: var(--card); color: var(--ink); border-radius: 18px; overflow:hidden; font-size: 14px; }
+  th, td { text-align:left; padding: 12px 16px; border-bottom: 1px solid var(--line); vertical-align: top; line-height: 1.5; }
+  th { width: 180px; color: var(--dim); font-weight: 600; }
+  tr:last-child td, tr:last-child th { border-bottom: 0; }
+  code { font-family: ui-monospace, Menlo, monospace; font-size: 12.5px; }
+  .drawn { background: var(--card); color: var(--ink); border-radius: 18px; padding: 18px; display:grid; grid-template-columns: repeat(auto-fit, minmax(220px,1fr)); gap: 18px; }
+  .drawn div { font-size: 13px; color: var(--dim); line-height: 1.5; }
+  .drawn b { display:block; color: var(--ink); margin-bottom: 4px; font-size: 14px; }
+  .drawn svg { width: 100%; height: 70px; display:block; margin-bottom: 8px; border-radius: 10px; }
+  footer { margin-top: 56px; font-size: 13px; color: var(--muted); line-height: 1.6; }
+  footer a { color: var(--muted2); }
+  @media (max-width: 600px) { th { width: 110px; } h1 { font-size: 32px; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="k">Team handoff / Kit 03</div>
+  <h1>Asset library.</h1>
+  <p class="lede">Everything Wink Wink draws with. Ten pedestrians in two states, the drawn lanes and hearts, synthesized sound, a palette, and the rules behind the wink input.</p>
+  <a class="btn" href="./wink-wink-assets.zip" download>Download kit (zip) ↓</a><a class="btn ghost" href="../">Play the game ↗</a><a class="btn ghost" href="https://github.com/Belendali/wink-wink">GitHub ↗</a>
+  <nav><a href="#cast">Cast</a><a href="#drawn">Drawn in code</a><a href="#sound">Sound</a><a href="#palette">Palette</a><a href="#rules">Rules &amp; input</a><a href="#versions">Iterations</a></nav>
+
+  <section id="cast">
+    <h2>Cast</h2>
+    <p class="sub">Ten pedestrians, two states each. <b>walk</b> is the approach, drawn on the lane and swayed by code; <b>down</b> is the "swept off their feet" pose that replaces it on a hit and tumbles to the floor. Each round deals from a shuffled deck so nobody repeats until everyone has walked. Drawn 145 px tall on a 390 × 694 canvas.</p>
+    <div class="grid">
+      <div class="card">
+        <div class="strip two"><figure><div class="pv"><img src="../assets/people/p01-walk.png" alt="p01 walk" loading="lazy" /></div><figcaption>walk</figcaption></figure><figure><div class="pv"><img src="../assets/people/p01-down.png" alt="p01 down" loading="lazy" /></div><figcaption>down</figcaption></figure></div>
+        <b>p01</b>
+        <p>Voice: young woman. 640 × 640, transparent.</p>
+        <div class="row"><a href="../assets/people/p01-walk.png" download>walk ↓</a><a href="../assets/people/p01-down.png" download>down ↓</a></div>
+      </div>
+      <div class="card">
+        <div class="strip two"><figure><div class="pv"><img src="../assets/people/p02-walk.png" alt="p02 walk" loading="lazy" /></div><figcaption>walk</figcaption></figure><figure><div class="pv"><img src="../assets/people/p02-down.png" alt="p02 down" loading="lazy" /></div><figcaption>down</figcaption></figure></div>
+        <b>p02</b>
+        <p>Voice: granny. 640 × 640, transparent.</p>
+        <div class="row"><a href="../assets/people/p02-walk.png" download>walk ↓</a><a href="../assets/people/p02-down.png" download>down ↓</a></div>
+      </div>
+      <div class="card">
+        <div class="strip two"><figure><div class="pv"><img src="../assets/people/p03-walk.png" alt="p03 walk" loading="lazy" /></div><figcaption>walk</figcaption></figure><figure><div class="pv"><img src="../assets/people/p03-down.png" alt="p03 down" loading="lazy" /></div><figcaption>down</figcaption></figure></div>
+        <b>p03</b>
+        <p>Voice: young man. 640 × 640, transparent.</p>
+        <div class="row"><a href="../assets/people/p03-walk.png" download>walk ↓</a><a href="../assets/people/p03-down.png" download>down ↓</a></div>
+      </div>
+      <div class="card">
+        <div class="strip two"><figure><div class="pv"><img src="../assets/people/p04-walk.png" alt="p04 walk" loading="lazy" /></div><figcaption>walk</figcaption></figure><figure><div class="pv"><img src="../assets/people/p04-down.png" alt="p04 down" loading="lazy" /></div><figcaption>down</figcaption></figure></div>
+        <b>p04</b>
+        <p>Voice: big man. 640 × 640, transparent.</p>
+        <div class="row"><a href="../assets/people/p04-walk.png" download>walk ↓</a><a href="../assets/people/p04-down.png" download>down ↓</a></div>
+      </div>
+      <div class="card">
+        <div class="strip two"><figure><div class="pv"><img src="../assets/people/p05-walk.png" alt="p05 walk" loading="lazy" /></div><figcaption>walk</figcaption></figure><figure><div class="pv"><img src="../assets/people/p05-down.png" alt="p05 down" loading="lazy" /></div><figcaption>down</figcaption></figure></div>
+        <b>p05</b>
+        <p>Voice: young woman. 640 × 640, transparent.</p>
+        <div class="row"><a href="../assets/people/p05-walk.png" download>walk ↓</a><a href="../assets/people/p05-down.png" download>down ↓</a></div>
+      </div>
+      <div class="card">
+        <div class="strip two"><figure><div class="pv"><img src="../assets/people/p06-walk.png" alt="p06 walk" loading="lazy" /></div><figcaption>walk</figcaption></figure><figure><div class="pv"><img src="../assets/people/p06-down.png" alt="p06 down" loading="lazy" /></div><figcaption>down</figcaption></figure></div>
+        <b>p06</b>
+        <p>Voice: woman. 640 × 640, transparent.</p>
+        <div class="row"><a href="../assets/people/p06-walk.png" download>walk ↓</a><a href="../assets/people/p06-down.png" download>down ↓</a></div>
+      </div>
+      <div class="card">
+        <div class="strip two"><figure><div class="pv"><img src="../assets/people/p07-walk.png" alt="p07 walk" loading="lazy" /></div><figcaption>walk</figcaption></figure><figure><div class="pv"><img src="../assets/people/p07-down.png" alt="p07 down" loading="lazy" /></div><figcaption>down</figcaption></figure></div>
+        <b>p07</b>
+        <p>Voice: grandpa. 640 × 640, transparent.</p>
+        <div class="row"><a href="../assets/people/p07-walk.png" download>walk ↓</a><a href="../assets/people/p07-down.png" download>down ↓</a></div>
+      </div>
+      <div class="card">
+        <div class="strip two"><figure><div class="pv"><img src="../assets/people/p08-walk.png" alt="p08 walk" loading="lazy" /></div><figcaption>walk</figcaption></figure><figure><div class="pv"><img src="../assets/people/p08-down.png" alt="p08 down" loading="lazy" /></div><figcaption>down</figcaption></figure></div>
+        <b>p08</b>
+        <p>Voice: young man. 640 × 640, transparent.</p>
+        <div class="row"><a href="../assets/people/p08-walk.png" download>walk ↓</a><a href="../assets/people/p08-down.png" download>down ↓</a></div>
+      </div>
+      <div class="card">
+        <div class="strip two"><figure><div class="pv"><img src="../assets/people/p09-walk.png" alt="p09 walk" loading="lazy" /></div><figcaption>walk</figcaption></figure><figure><div class="pv"><img src="../assets/people/p09-down.png" alt="p09 down" loading="lazy" /></div><figcaption>down</figcaption></figure></div>
+        <b>p09</b>
+        <p>Voice: kid. 640 × 640, transparent.</p>
+        <div class="row"><a href="../assets/people/p09-walk.png" download>walk ↓</a><a href="../assets/people/p09-down.png" download>down ↓</a></div>
+      </div>
+      <div class="card">
+        <div class="strip two"><figure><div class="pv"><img src="../assets/people/p10-walk.png" alt="p10 walk" loading="lazy" /></div><figcaption>walk</figcaption></figure><figure><div class="pv"><img src="../assets/people/p10-down.png" alt="p10 down" loading="lazy" /></div><figcaption>down</figcaption></figure></div>
+        <b>p10</b>
+        <p>Voice: young woman. 640 × 640, transparent.</p>
+        <div class="row"><a href="../assets/people/p10-walk.png" download>walk ↓</a><a href="../assets/people/p10-down.png" download>down ↓</a></div>
+      </div>
+    </div>
+  </section>
+
+  <section id="drawn">
+    <h2>Drawn in code</h2>
+    <p class="sub">No image files for these. Everything below is canvas, redrawn every frame so it can react to the beat and to the face.</p>
+    <div class="drawn">
+      <div><svg viewBox="0 0 200 70" fill="none" stroke-linecap="round" style="background:#1a0f2e"><line x1="60" y1="8" x2="60" y2="62" stroke="rgba(255,255,255,.4)" stroke-width="2"/><line x1="140" y1="8" x2="140" y2="62" stroke="rgba(255,255,255,.4)" stroke-width="2"/><circle cx="60" cy="48" r="16" stroke="#ff5c8a" stroke-width="3"/><circle cx="60" cy="48" r="26" stroke="#ff5c8a" stroke-width="1.5" opacity=".4"/><circle cx="140" cy="48" r="16" stroke="#ff5c8a" stroke-width="3"/></svg><b>Lanes and targets</b>Two lanes at 28% and 72% of the width, judge line at 68% of the height. A pink target ring on each lane with an approach disc that shrinks onto it as the pedestrian arrives, plus a heartbeat ripple after every wink.</div>
+      <div><svg viewBox="0 0 200 70" fill="#ff5c8a" style="background:#1a0f2e"><path d="M40 55 C 20 40, 22 22, 36 22 C 42 22, 46 27, 48 30 C 50 27, 54 22, 60 22 C 74 22, 76 40, 56 55 L 48 62 Z"/><path d="M110 40 C 100 32, 101 22, 108 22 C 111 22, 113 25, 114 26 C 115 25, 117 22, 120 22 C 127 22, 128 32, 118 40 L 114 44 Z" opacity=".7"/><path d="M160 30 C 154 26, 155 20, 159 20 C 161 20, 162 22, 162 22 C 163 22, 164 20, 166 20 C 170 20, 171 26, 165 30 L 162 33 Z" opacity=".45"/></svg><b>Hearts</b>Fly from the winking eye (tracked from the face mesh) to the lane, 12 to 26 px, wobbling, in <code>#ff5c8a</code>. A double-eye hit sends a bigger burst.</div>
+      <div><svg viewBox="0 0 200 70" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round" style="background:#1a0f2e"><path d="M34 35 C 50 14, 78 14, 94 35 C 78 56, 50 56, 34 35 Z"/><circle cx="64" cy="35" r="8" fill="#fff"/><path d="M118 38 C 134 56, 162 56, 178 38"/><path d="M128 44 l-5 8 M148 49 l0 9 M168 44 l5 8"/></svg><b>How-to icon</b>One eye open, one closed, in white line. Shown on the camera screen with "Wink to start"; the first detected wink starts the round.</div>
+      <div><svg viewBox="0 0 200 70" style="background:#1a0f2e"><g fill="#ffe052"><rect x="20" y="10" width="8" height="12" transform="rotate(20 24 16)"/><rect x="60" y="30" width="8" height="12" fill="#ff5c8a" transform="rotate(-30 64 36)"/><rect x="100" y="12" width="8" height="12" fill="#b58cff"/><rect x="140" y="34" width="8" height="12" fill="#ffb3c8" transform="rotate(45 144 40)"/><rect x="175" y="18" width="8" height="12" fill="#fff7fb" transform="rotate(-10 179 24)"/></g></svg><b>Result</b>Confetti in the five palette colours, a big percentage, a one-line verdict, and the people you swept shown one at a time, half in frame, swaying.</div>
+    </div>
+  </section>
+
+  <section id="sound">
+    <h2>Sound</h2>
+    <p class="sub">All synthesized with WebAudio except the ending stinger. No copyrighted audio anywhere.</p>
+    <table>
+      <tr><th>Groove</th><td>80 bpm, 15-second song. Kick, snare, hats, a bass line in A and a two-bar chord loop (C, Dm, Em, Dm) under a simple melody. Scheduled ahead of time so it never drifts against the chart.</td></tr>
+      <tr><th>Voices</th><td>Ten character voices from two band-pass formant filters over a sine or triangle with vibrato. Pitch, slide and wobble differ per voice: young woman 620 Hz, granny 400 Hz with a big wobble, kid highest, big man lowest. A hit makes the character squeak; a miss makes them grumble.</td></tr>
+      <tr><th>Cues</th><td>Count-in ticks, "go", perfect / good / miss blips, a win chime.</td></tr>
+      <tr><th>Stinger</th><td><a href="../assets/audio/ending-great.mp3" download>ending-great.mp3</a> on 50% or better, shared with the salon and jump-rope games.</td></tr>
+    </table>
+  </section>
+
+  <section id="palette">
+    <h2>Palette</h2>
+    <p class="sub">Night-street purple with a hot pink accent. Used for UI, hearts, rings and confetti.</p>
+    <div class="swatches"><div class="sw dark" style="background:#1a0f2e">background<br>#1a0f2e</div><div class="sw dark" style="background:#2a1740">ink<br>#2a1740</div><div class="sw" style="background:#ff5c8a">pink · hits, hearts<br>#ff5c8a</div><div class="sw" style="background:#ffb3c8">pink 2<br>#ffb3c8</div><div class="sw" style="background:#b58cff">lavender<br>#b58cff</div><div class="sw" style="background:#ffe052">yellow · verdict<br>#ffe052</div><div class="sw" style="background:#fff7fb">card<br>#fff7fb</div></div>
+  </section>
+
+  <section id="rules">
+    <h2>Rules &amp; input</h2>
+    <p class="sub">How a wink becomes a hit.</p>
+    <table>
+      <tr><th>Round</th><td>15 seconds at 80 bpm. Pedestrians walk in on the left and right lanes; wink the eye on their side when they reach the ring. Two at once means close both eyes.</td></tr>
+      <tr><th>Eye tracking</th><td>MediaPipe Face Landmarker on device, blendshapes <code>eyeBlinkLeft</code> / <code>eyeBlinkRight</code>. An eye counts as closed when its blink value leads the other by more than 0.18, so it adapts to how open your eyes naturally are.</td></tr>
+      <tr><th>Single vs both</th><td>A 70 ms window decides whether one eye or both closed. The judged time is the earlier of "eye started closing" and "closure confirmed", minus 40 ms of camera and model lag.</td></tr>
+      <tr><th>Timing windows</th><td>Perfect ±220 ms, Good ±500 ms. Wider than a tap game on purpose: a wink is slower than a finger.</td></tr>
+      <tr><th>Fallback</th><td>If the tracker only ever sees double blinks, the game switches to both-eyes mode. Practice mode plays with taps and no camera.</td></tr>
+      <tr><th>Safe zones</th><td>390 × 694 canvas. Score, combo and timer sit inside TikTok’s core zone (x 65–325, y from 82). The judge line keeps a whole character above y = 545 so the hit moment is never covered by the caption area. Add <code>?zones</code> to the URL to see the overlay.</td></tr>
+      <tr><th>Flow</th><td>Camera card → white flash → "Wink to start" → count-in → 15 s → result. First pedestrian arrives about 2.7 s after GO so audio and tracking are warm.</td></tr>
+    </table>
+  </section>
+
+  <section id="versions">
+    <h2>Iterations</h2>
+    <p class="sub">Earlier builds are kept online so the process is visible.</p>
+    <div class="grid">
+      <div class="card"><b style="margin-top:0">v1 · greybox</b><p>Two lanes, circle targets, no cast. Proved that winks can be read reliably enough for rhythm.</p><div class="row"><a href="../v1-greybox/">Open ↗</a></div></div>
+      <div class="card"><b style="margin-top:0">v2 · first cast</b><p>First ten pedestrians and the heart feedback. Frozen before the camera-first flow and the sway showcase.</p><div class="row"><a href="../v2-first-cast/">Open ↗</a></div></div>
+      <div class="card"><b style="margin-top:0">All versions</b><p>Side-by-side list with what changed in each.</p><div class="row"><a href="../versions/">Open ↗</a></div></div>
+    </div>
+  </section>
+
+  <footer>Wink Wink · face-tracked rhythm game · <a href="../">play</a> · <a href="https://github.com/Belendali/wink-wink">source</a>. All art generated for this project; all audio synthesized or recorded for it.</footer>
+</div>
+</body>
+</html>
