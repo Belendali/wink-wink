@@ -102,8 +102,8 @@ function makeChart() {
 function show(id, on = true) { $(id).classList.toggle('hidden', !on); }
 function setMode(m) { mode = m; $('phone').classList.toggle('setup', m === 'setup'); show('startPanel', m === 'idle'); show('setupPanel', m === 'setup'); show('hud', ['playing', 'countdown', 'setup', 'howto'].includes(m)); show('resultPanel', m === 'result'); show('countdown', m === 'countdown'); show('howto', m === 'howto'); }
 
-$('play').onclick = () => { ensureAudio(); practice = false; startSetup(); };
-$('practice').onclick = () => { ensureAudio(); practice = true; bothMode = false; stopCamera(); beginCountdown(); };
+$('play').onclick = () => { ensureAudio(); practice = false; $('phone').classList.remove('practice'); startSetup(); };
+$('practice').onclick = () => { ensureAudio(); practice = true; $('phone').classList.add('practice'); bothMode = false; stopCamera(); beginCountdown(); };
 $('startRound').onclick = () => beginCountdown();
 $('bothMode').onclick = () => { bothMode = true; beginCountdown(); };
 $('replay').onclick = () => beginCountdown();
@@ -257,7 +257,17 @@ function drawHearts(dt) {
 
 // ---------- render ----------
 const TAU = Math.PI * 2; let lastDraw = 0;
-function draw() {
+const SHOW_ZONES = new URLSearchParams(location.search).has('zones');
+function drawZones() { // TikTok Effect safe zones on a 390×694 canvas, scaled to this canvas height
+  const k = H / 694; ctx.save(); ctx.lineWidth = 1.5;
+  ctx.fillStyle = 'rgba(255,0,80,.18)'; ctx.fillRect(0, 0, 19 * k, H); ctx.fillRect(W - 19 * k, 0, 19 * k, H);
+  ctx.strokeStyle = '#4ec9b0'; ctx.setLineDash([6, 6]); ctx.strokeRect(19 * k, 83 * k, 352 * k, 258 * k); ctx.strokeRect(65 * k, 83 * k, 260 * k, 462 * k);
+  ctx.setLineDash([]); ctx.strokeStyle = '#ffe052'; ctx.lineWidth = 2; ctx.strokeRect(65 * k, 82 * k, 260 * k, 451 * k);
+  ctx.font = '700 10px system-ui'; ctx.textAlign = 'left'; ctx.fillStyle = '#ffe052'; ctx.fillText('CORE 260×451', 68 * k, 78 * k); ctx.fillStyle = '#4ec9b0'; ctx.fillText('VISUAL', 22 * k, 352 * k); ctx.fillStyle = '#ff5c8a'; ctx.fillText('CLIP', 2, H - 6);
+  ctx.restore();
+}
+function draw() { drawInner(); if (SHOW_ZONES) drawZones(); }
+function drawInner() {
   const nowMs = performance.now(), dt = Math.min(0.05, (nowMs - lastDraw) / 1000 || 0); lastDraw = nowMs;
   ctx.clearRect(0, 0, W, H);
   if (mode === 'result') {
