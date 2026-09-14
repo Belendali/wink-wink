@@ -360,7 +360,7 @@ function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.a
 // ---------- loop ----------
 function loop() {
   requestAnimationFrame(loop);
-  if (landmarker && stream && video.readyState >= 2 && video.currentTime !== lastVideoTime && (mode === 'setup' || mode === 'playing' || mode === 'countdown')) {
+  if (landmarker && stream && video.readyState >= 2 && video.currentTime !== lastVideoTime && ['setup', 'howto', 'playing', 'countdown'].includes(mode)) {
     lastVideoTime = video.currentTime;
     try {
       const res = landmarker.detectForVideo(video, performance.now());
