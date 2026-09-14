@@ -171,7 +171,7 @@ function fire(lane) {
   best.hit = grade; best.hitAt = t;
   stats[grade]++; stats.combo++; stats.maxCombo = Math.max(stats.maxCombo, stats.combo); stats.score += grade === 'perfect' ? 100 : 60;
   effects.push({ kind: grade, lane: best.lane, at: t });
-  judge(grade === 'perfect' ? 'PERFECT' : 'GOOD'); sfx(grade);
+  judge(grade === 'perfect' ? 'PERFECT' : 'GOOD'); sfx(grade); shootHearts(best.lane, grade === 'perfect' ? 8 : 4, true);
   if (grade === 'perfect' && (!faceBest || Math.random() < 0.4)) faceBest = grabFace();
   updateHud();
 }
@@ -183,6 +183,8 @@ function updateHud() { $('score').textContent = stats.score; $('combo').textCont
 // eye state machine. Wink = one eye clearly more closed than the other; both = both closed together.
 // Scores are smoothed a little; thresholds are relative so people with "lazy" winks still register.
 let smL = 0, smR = 0, faceAt = 0;
+let eyePos = { L: null, R: null }; // canvas coords of the player's eyes
+let hearts = [];
 function handleEyes(rawL, rawR) {
   faceAt = performance.now();
   smL += (rawL - smL) * 0.5; smR += (rawR - smR) * 0.5;
@@ -201,8 +203,8 @@ function handleEyes(rawL, rawR) {
   if (now - eye.pendingAt >= 70) {
     eye.armed = false;
     const isBoth = eye.both || (eye.L && eye.R);
-    if (mode === 'setup') { if (!isBoth && eye.L) { calib.L = true; $('calL').classList.add('ok'); } if (!isBoth && eye.R) { calib.R = true; $('calR').classList.add('ok'); } if (calib.L && calib.R) show('startRound'); }
-    else if (mode === 'playing') fire(bothMode ? 2 : isBoth ? 2 : eye.L ? 0 : 1);
+    if (mode === 'setup') { shootHearts(isBoth ? 2 : eye.L ? 0 : 1, 2); if (!isBoth && eye.L) { calib.L = true; $('calL').classList.add('ok'); } if (!isBoth && eye.R) { calib.R = true; $('calR').classList.add('ok'); } if (calib.L && calib.R) show('startRound'); }
+    else if (mode === 'playing') { const lane = bothMode ? 2 : isBoth ? 2 : eye.L ? 0 : 1; shootHearts(lane, 3); fire(lane); }
     eye.L = eye.R = false; eye.both = false;
   }
 }
@@ -228,11 +230,34 @@ function paintFace(target, src) {
   if (src) g.drawImage(src, 0, 0); else { g.fillStyle = '#f3e8ff'; g.fillRect(0, 0, 160, 200); g.font = '64px system-ui'; g.textAlign = 'center'; g.fillText(practice ? '😉' : '🫥', 80, 120); }
 }
 
+// ---------- hearts from the eyes ----------
+function shootHearts(lane, count, big = false) {
+  const hy = H * HIT_Y;
+  const srcs = lane === 2 ? [['L', 0], ['R', 1]] : [[lane === 0 ? 'L' : 'R', lane]];
+  for (const [side, l] of srcs) {
+    const from = eyePos[side] || { x: LANE_X[l], y: H * 0.3 };
+    for (let i = 0; i < count; i++) hearts.push({ x: from.x + (Math.random() - .5) * 16, y: from.y, tx: LANE_X[l] + (Math.random() - .5) * 40, ty: hy - 40 + (Math.random() - .5) * 30, t: 0, dur: 0.45 + Math.random() * 0.25, size: (big ? 18 : 12) + Math.random() * 8, wob: Math.random() * TAU });
+  }
+}
+function drawHearts(dt) {
+  ctx.textAlign = 'center'; ctx.textBaseline = 'middle';
+  for (const h of hearts) {
+    h.t += dt; const k = Math.min(1, h.t / h.dur), e = 1 - Math.pow(1 - k, 2);
+    const x = h.x + (h.tx - h.x) * e + Math.sin(h.wob + k * 6) * 10, y = h.y + (h.ty - h.y) * e - Math.sin(k * Math.PI) * 60;
+    ctx.globalAlpha = k < 0.85 ? 1 : 1 - (k - 0.85) / 0.15; ctx.font = (h.size * (0.6 + 0.4 * k)) + 'px system-ui'; ctx.fillText('💗', x, y);
+  }
+  ctx.globalAlpha = 1; hearts = hearts.filter((h) => h.t < h.dur);
+  // a little sparkle on the eye that is closed right now
+  if (mode === 'playing' || mode === 'setup') for (const side of ['L', 'R']) { const on = $('eye' + side).classList.contains('on'), p = eyePos[side]; if (on && p) { ctx.font = '22px system-ui'; ctx.fillText('✨', p.x + (side === 'L' ? -18 : 18), p.y - 14); } }
+}
+
 // ---------- render ----------
-const TAU = Math.PI * 2;
+const TAU = Math.PI * 2; let lastDraw = 0;
 function draw() {
+  const nowMs = performance.now(), dt = Math.min(0.05, (nowMs - lastDraw) / 1000 || 0); lastDraw = nowMs;
   ctx.clearRect(0, 0, W, H);
   if (mode === 'result' && confetti.length) { const dt = (performance.now() - confettiAt) / 1000; for (const c of confetti) { const y = c.y + c.vy * dt, x = c.x + c.vx * dt + Math.sin(dt * 3 + c.a) * 12; if (y > H + 10) continue; ctx.save(); ctx.translate(x, y); ctx.rotate(c.a + dt * 4); ctx.fillStyle = c.c; ctx.fillRect(-c.r / 2, -c.r, c.r, c.r * 2); ctx.restore(); } return; }
+  if (mode === 'setup') { drawHearts(dt); return; }
   if (!['playing', 'countdown', 'howto'].includes(mode)) return;
   // lanes
   ctx.fillStyle = 'rgba(26,15,46,.22)'; ctx.fillRect(0, 0, W, H);
@@ -279,6 +304,7 @@ function draw() {
     }
   }
   effects = effects.filter((e) => songTime - e.at < 0.7);
+  drawHearts(dt);
   ctx.textBaseline = 'alphabetic';
 }
 function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }
@@ -291,6 +317,12 @@ function loop() {
     try {
       const res = landmarker.detectForVideo(video, performance.now());
       const bs = res.faceBlendshapes && res.faceBlendshapes[0];
+      const lm = res.faceLandmarks && res.faceLandmarks[0];
+      if (lm) { const toC = (i) => { // video is mirrored and cover-fitted into the phone frame
+          const vw = video.videoWidth, vh = video.videoHeight, s = Math.max(W / vw, H / vh), dw = vw * s, dh = vh * s;
+          return { x: (W - dw) / 2 + (1 - lm[i].x) * dw, y: (H - dh) / 2 + lm[i].y * dh }; };
+        const mid = (a, b) => { const p = toC(a), q = toC(b); return { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 }; };
+        eyePos = { L: mid(159, 145), R: mid(386, 374) }; }
       if (bs) { const get = (name) => (bs.categories.find((c) => c.categoryName === name) || {}).score || 0; handleEyes(get('eyeBlinkLeft'), get('eyeBlinkRight')); }
       else if (mode === 'setup' && performance.now() - faceAt > 600) { $('setupTitle').textContent = 'Looking for your face…'; $('setupText').textContent = 'Hold the phone at arm\'s length, face in the middle.'; $('eyeL').classList.remove('on'); $('eyeR').classList.remove('on'); }
     } catch (e) { /* skip frame */ }
