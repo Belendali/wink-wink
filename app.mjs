@@ -121,7 +121,7 @@ $('play').onclick = () => { ensureAudio(); practice = false; $('phone').classLis
 $('practice').onclick = () => { ensureAudio(); practice = true; $('phone').classList.add('practice'); bothMode = false; stopCamera(); beginCountdown(); };
 $('startRound').onclick = () => beginCountdown();
 $('bothMode').onclick = () => { bothMode = true; beginCountdown(); };
-$('replay').onclick = () => beginCountdown();
+$('replay').onclick = () => showHowto();
 $('home').onclick = () => { clearTimeout(beginCountdown.t); clearTimeout(endRound.t); stopCamera(); setMode('idle'); };
 
 async function startSetup() {
@@ -135,7 +135,7 @@ async function startSetup() {
   $('setupTitle').textContent = 'Looking for your face…'; $('setupText').textContent = 'Hold the phone at arm\'s length.';
   bothMode = false; blinkStats = { both: 0, single: 0 };
   const started = performance.now();
-  const wait = setInterval(() => { if (mode !== 'setup') { clearInterval(wait); return; } if (performance.now() - faceAt < 300 || performance.now() - started > 8000) { clearInterval(wait); beginCountdown(); } }, 100);
+  const wait = setInterval(() => { if (mode !== 'setup') { clearInterval(wait); return; } if (performance.now() - faceAt < 300 || performance.now() - started > 8000) { clearInterval(wait); showHowto(); } }, 100);
 }
 async function loadLandmarker() {
   if (landmarker) return;
@@ -150,10 +150,13 @@ async function startCamera() {
 }
 function stopCamera() { if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; video.srcObject = null; } }
 
-function beginCountdown() {
-  ensureAudio(); setMode('howto');
-  clearTimeout(beginCountdown.t); beginCountdown.t = setTimeout(startCountdown, 2000);
+function showHowto() {
+  ensureAudio(); setMode('howto'); clearTimeout(beginCountdown.t);
+  $('howtoCta').textContent = practice ? 'Starting…' : 'Blink to start';
+  if (practice) beginCountdown.t = setTimeout(startCountdown, 2000);   // no camera: just wait
+  // camera: the first detected blink starts the round, which also proves tracking is live
 }
+function beginCountdown() { showHowto(); }
 function startCountdown() {
   notes = makeChart(); effects = []; faceBest = faceWorst = null; confetti = [];
   stats = { perfect: 0, good: 0, miss: 0, combo: 0, maxCombo: 0, score: 0 }; updateHud();
@@ -226,7 +229,8 @@ function handleEyes(rawL, rawR) {
   if (now - eye.pendingAt >= 70) {
     eye.armed = false;
     const isBoth = eye.both || (eye.L && eye.R);
-    if (mode === 'playing') { if (isBoth) blinkStats.both++; else blinkStats.single++; if (!bothMode && blinkStats.both >= 4 && blinkStats.single === 0) { bothMode = true; judge('BOTH EYES MODE'); } const lane = bothMode ? 2 : isBoth ? 2 : eye.L ? 0 : 1; shootHearts(lane, 3); fire(lane); }
+    if (mode === 'howto' && !practice) { startCountdown(); }
+    else if (mode === 'playing') { if (isBoth) blinkStats.both++; else blinkStats.single++; if (!bothMode && blinkStats.both >= 4 && blinkStats.single === 0) { bothMode = true; judge('BOTH EYES MODE'); } const lane = bothMode ? 2 : isBoth ? 2 : eye.L ? 0 : 1; shootHearts(lane, 3); fire(lane); }
     eye.L = eye.R = false; eye.both = false;
   }
 }

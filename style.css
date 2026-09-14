@@ -67,3 +67,6 @@ h2 { font-size: 24px; margin: 8px 0 8px; }
 
 .replay { width: 72px; height: 72px; border-radius: 50%; border: 3px solid #fff; background: rgba(26,15,46,.35); display: flex; align-items: center; justify-content: center; cursor: pointer; animation: howin .4s ease-out; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
 .replay:active { transform: scale(.94); }
+
+.howto em { font-style: normal; margin-top: 18px; font-size: 15px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #ffe052; animation: pulse 1.2s ease-in-out infinite; }
+@keyframes pulse { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
