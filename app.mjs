@@ -164,18 +164,17 @@ function startCountdown() {
   const iv = setInterval(() => { n--; if (n > 0) { $('countdown').textContent = n; sfx('count'); } else { clearInterval(iv); $('countdown').textContent = ''; sfx('go'); startRound(); } }, 700);
 }
 function startRound() {
-  setMode('playing'); startAt = audioCtx.currentTime + 0.1; nextBeat = startAt; beatIndex = 0; clearTimeout(schedulerId); scheduleBeats();
+  if (DEBUG) dlog('round start'); setMode('playing'); startAt = audioCtx.currentTime + 0.1; nextBeat = startAt; beatIndex = 0; clearTimeout(schedulerId); scheduleBeats();
 }
 function endRound() {
   clearTimeout(schedulerId); setMode('result'); sfx('win');
   const total = notes.length, hits = stats.perfect + stats.good, pct = total ? Math.round(hits / total * 100) : 0;
   $('rPct').textContent = pct + '%'; $('rLine').textContent = hits + ' of ' + total + ' swept off their feet';
   $('resultTitle').textContent = pct >= 90 ? 'Irresistible.' : pct >= 70 ? 'Dangerous charm.' : pct >= 40 ? 'Getting there.' : 'They called security.';
-  // everyone you swept off their feet drops in from the top and lines up, no overlaps
-  pile = []; const fallen = [];
-  for (const n of notes) { if (!(n.hit === 'perfect' || n.hit === 'good')) continue; const lanes = n.lane === 2 ? [0, 1] : [n.lane]; for (const l of lanes) fallen.push(l === 1 && n.lane === 2 ? n.who2 : n.who); }
-  const cols = 4, cell = W / cols, rowH = PERSON_H * 0.62 + 6;
-  fallen.forEach((who, i) => { const row = Math.floor(i / cols), col = i % cols, offset = row % 2 ? cell / 2 : 0; const x = Math.min(W - cell / 2, offset + (col + 0.5) * cell); pile.push({ who, x, y: -220 - Math.random() * 120, gy: H * 0.97 - row * rowH, vy: 0, rot: 0, delay: 0.6 + i * 0.12, landed: false, squash: 0 }); });
+  // everyone you swept off their feet tumbles in from the top and piles up (each character once)
+  pile = []; const seen = new Set();
+  for (const n of notes) { if (!(n.hit === 'perfect' || n.hit === 'good')) continue; const lanes = n.lane === 2 ? [0, 1] : [n.lane]; for (const l of lanes) { const who = l === 1 && n.lane === 2 ? n.who2 : n.who; if (!seen.has(who)) seen.add(who); } }
+  [...seen].forEach((who, i) => pile.push({ who, x: 60 + Math.random() * (W - 120), y: -260 - Math.random() * 160, vy: 0, vx: (Math.random() - .5) * 60, rot: (Math.random() - .5) * 0.8, spin: (Math.random() - .5) * 5, delay: 0.5 + i * 0.28, landed: false, squash: 0, scale: 0.95 }));
   show('rbtns', false); clearTimeout(endRound.t); endRound.t = setTimeout(() => show('rbtns'), 5000);
   resultAt = performance.now();
   confetti = Array.from({ length: 90 }, () => ({ x: Math.random() * W, y: -Math.random() * H, vx: (Math.random() - .5) * 40, vy: 80 + Math.random() * 120, r: 4 + Math.random() * 5, c: ['#ff5c8a', '#ffb3c8', '#b58cff', '#ffe052', '#fff7fb'][Math.floor(Math.random() * 5)], a: Math.random() * TAU }));
@@ -183,9 +182,10 @@ function endRound() {
 }
 
 // ---------- input ----------
-function fire(lane) {
+const DETECT_LAG = 0.09; // camera + model latency, seconds
+function fire(lane, at = songTime) {
   if (mode !== 'playing') return;
-  const t = songTime; let best = null, bestD = GOOD * 1.5 + 1e-9;
+  const t = at; let best = null, bestD = GOOD * 1.5 + 1e-9;
   for (const n of notes) {
     if (n.hit) continue;
     const win = n.id < 2 ? GOOD * 1.5 : GOOD; // warm-up: the first two are forgiving
@@ -193,9 +193,10 @@ function fire(lane) {
     if (!bothMode && n.lane === 2 && lane !== 2) continue;
     const d = Math.abs(n.t - t); if (d <= win && d < bestD) { bestD = d; best = n; }
   }
-  if (!best) return;
+  if (!best) { if (DEBUG) dlog('no note in window'); return; }
   const grade = bestD <= PERFECT ? 'perfect' : 'good';
-  best.hit = grade; best.hitAt = t;
+  best.hit = grade; best.hitAt = songTime;
+  if (DEBUG) dlog(`hit ${grade} note#${best.id} d=${(t - best.t).toFixed(3)}`);
   stats[grade]++; stats.combo++; stats.maxCombo = Math.max(stats.maxCombo, stats.combo); stats.score += grade === 'perfect' ? 100 : 60;
   effects.push({ kind: grade, lane: best.lane, at: t });
   judge(grade === 'perfect' ? 'PERFECT' : 'GOOD'); sfx(grade); shootHearts(best.lane, grade === 'perfect' ? 8 : 4, true);
@@ -203,7 +204,7 @@ function fire(lane) {
   if (grade === 'perfect' && (!faceBest || Math.random() < 0.4)) faceBest = grabFace();
   updateHud();
 }
-function missNote(n) { n.hit = 'miss'; stats.miss++; stats.combo = 0; effects.push({ kind: 'miss', lane: n.lane, at: songTime }); judge('MISS'); sfx('miss'); if (!faceWorst || Math.random() < 0.5) faceWorst = grabFace(); updateHud(); }
+function missNote(n) { if (DEBUG) dlog(`miss note#${n.id} at ${songTime.toFixed(2)}`); n.hit = 'miss'; stats.miss++; stats.combo = 0; effects.push({ kind: 'miss', lane: n.lane, at: songTime }); judge('MISS'); sfx('miss'); if (!faceWorst || Math.random() < 0.5) faceWorst = grabFace(); updateHud(); }
 let judgeTimer = 0;
 function judge(text) { const j = $('judge'); j.textContent = text; j.classList.add('show'); clearTimeout(judgeTimer); judgeTimer = setTimeout(() => j.classList.remove('show'), 350); }
 function updateHud() { $('score').textContent = stats.score; $('combo').textContent = stats.combo; }
@@ -281,6 +282,11 @@ function drawHearts(dt) {
 // ---------- render ----------
 const TAU = Math.PI * 2; let lastDraw = 0;
 const SHOW_ZONES = new URLSearchParams(location.search).has('zones');
+const DEBUG = new URLSearchParams(location.search).has('debug');
+const dlines = [];
+function dlog(m) { dlines.push(m); if (dlines.length > 14) dlines.shift(); }
+function nearest(at) { let b = null, d = 9; for (const n of notes) { if (n.hit) continue; const x = Math.abs(n.t - at); if (x < d) { d = x; b = n; } } return b ? `#${b.id}(${['L','R','both'][b.lane]}) ${(b.t - at).toFixed(2)}` : 'none'; }
+function drawDebug() { ctx.save(); ctx.font = '11px ui-monospace, monospace'; ctx.textAlign = 'left'; ctx.fillStyle = 'rgba(0,0,0,.55)'; ctx.fillRect(4, H * 0.3, W - 8, 14 * dlines.length + 8); ctx.fillStyle = '#9dff9d'; dlines.forEach((l, i) => ctx.fillText(l, 8, H * 0.3 + 12 + i * 14)); ctx.restore(); }
 function drawZones() { // TikTok Effect safe zones on a 390×694 canvas, scaled to this canvas height
   const k = H / 694; ctx.save(); ctx.lineWidth = 1.5;
   ctx.fillStyle = 'rgba(255,0,80,.18)'; ctx.fillRect(0, 0, 19 * k, H); ctx.fillRect(W - 19 * k, 0, 19 * k, H);
@@ -289,18 +295,25 @@ function drawZones() { // TikTok Effect safe zones on a 390×694 canvas, scaled 
   ctx.font = '700 10px system-ui'; ctx.textAlign = 'left'; ctx.fillStyle = '#ffe052'; ctx.fillText('CORE 260×451', 68 * k, 78 * k); ctx.fillStyle = '#4ec9b0'; ctx.fillText('VISUAL', 22 * k, 352 * k); ctx.fillStyle = '#ff5c8a'; ctx.fillText('CLIP', 2, H - 6);
   ctx.restore();
 }
-function draw() { drawInner(); if (SHOW_ZONES) drawZones(); }
+function draw() { drawInner(); if (SHOW_ZONES) drawZones(); if (DEBUG) drawDebug(); }
 function drawInner() {
   const nowMs = performance.now(), dt = Math.min(0.05, (nowMs - lastDraw) / 1000 || 0); lastDraw = nowMs;
   ctx.clearRect(0, 0, W, H);
   if (mode === 'result') {
     const t = (performance.now() - resultAt) / 1000;
+    const bodyW = PERSON_H * 0.55, bodyH = PERSON_H * 0.95; // rough box of a standing sprite at scale .95
     for (const p of pile) {
       if (t < p.delay) continue;
-      if (!p.landed) { p.vy += 1600 * dt; p.y += p.vy * dt; if (p.y >= p.gy) { p.y = p.gy; p.landed = true; p.squash = 1; sfx('land'); } }
-      else p.squash = Math.max(0, p.squash - dt * 4);
-      const sq = p.squash * 0.18; ctx.save(); ctx.translate(p.x, p.y); ctx.scale(1 + sq, 1 - sq); ctx.translate(-p.x, -p.y);
-      sprite(PEOPLE[p.who].down, p.x, p.y, { scale: 0.62 }); ctx.restore();
+      if (!p.landed) {
+        p.vy += 1500 * dt; p.y += p.vy * dt; p.x += p.vx * dt; p.rot += p.spin * dt;
+        const tilt = Math.abs(Math.sin(p.rot)); const hNow = bodyH * (1 - tilt * 0.45); // a tilted body is shorter
+        let floor = H * 0.985;
+        for (const q of pile) { if (q === p || !q.landed) continue; const qw = bodyW * 1.1 + Math.abs(Math.sin(q.rot)) * bodyH * 0.5; if (Math.abs(q.x - p.x) < qw * 0.75) floor = Math.min(floor, q.top); }
+        if (p.y >= floor) { p.y = floor; p.landed = true; p.top = floor - hNow * 0.9; p.squash = 1; p.rot = Math.max(-0.6, Math.min(0.6, p.rot + (Math.random() - .5) * 0.3)); sfx('land'); }
+        if (p.x < 40) { p.x = 40; p.vx *= -0.5; } if (p.x > W - 40) { p.x = W - 40; p.vx *= -0.5; }
+      } else p.squash = Math.max(0, p.squash - dt * 4);
+      const sq = p.squash * 0.16; ctx.save(); ctx.translate(p.x, p.y); ctx.scale(1 + sq, 1 - sq); ctx.translate(-p.x, -p.y);
+      sprite(PEOPLE[p.who].down, p.x, p.y, { scale: p.scale, rot: p.rot }); ctx.restore();
     }
     const dtc = (performance.now() - confettiAt) / 1000;
     for (const c of confetti) { const y = c.y + c.vy * dtc, x = c.x + c.vx * dtc + Math.sin(dtc * 3 + c.a) * 12; if (y > H + 10) continue; ctx.save(); ctx.translate(x, y); ctx.rotate(c.a + dtc * 4); ctx.fillStyle = c.c; ctx.fillRect(-c.r / 2, -c.r, c.r, c.r * 2); ctx.restore(); }
