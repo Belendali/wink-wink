@@ -85,6 +85,17 @@ function voice(who, big = false) {
   f1.connect(out); f2.connect(out); out.connect(audioCtx.destination);
 }
 
+function sfx(kind) {
+  if (!audioCtx) return; const t = audioCtx.currentTime;
+  if (kind === 'perfect') { [784, 988, 1319, 1568].forEach((f, i) => tone(f, t + 0.25 + i * 0.05, 0.2, 'triangle', 0.1)); } // sparkle, after the voice
+  if (kind === 'good') { tone(600, t, 0.08, 'triangle', 0.12, 900); }                            // pop
+  if (kind === 'miss') { tone(220, t, 0.18, 'sawtooth', 0.1, 160); tone(160, t + 0.16, 0.25, 'sawtooth', 0.08, 90); }                    // womp womp
+  if (kind === 'count') tone(660, t, 0.1, 'square', 0.12);
+  if (kind === 'land') { tone(120, t, 0.08, 'sine', 0.2, 60); noise(t, 0.04, 0.05); }
+  if (kind === 'go') tone(990, t, 0.3, 'square', 0.14);
+  if (kind === 'win') [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.12, 0.4, 'triangle', 0.16));
+}
+
 // ---------- chart ----------
 function makeChart() {
   const list = []; let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
