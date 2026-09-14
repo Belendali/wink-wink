@@ -162,15 +162,16 @@ function updateHud() { $('score').textContent = stats.score; $('combo').textCont
 
 // eye state machine. Wink = one eye clearly more closed than the other; both = both closed together.
 // Scores are smoothed a little; thresholds are relative so people with "lazy" winks still register.
-let smL = 0, smR = 0;
+let smL = 0, smR = 0, faceAt = 0;
 function handleEyes(rawL, rawR) {
+  faceAt = performance.now();
   smL += (rawL - smL) * 0.5; smR += (rawR - smR) * 0.5;
   const l = smL, r = smR;
   const both = l > 0.38 && r > 0.38 && Math.abs(l - r) < 0.3;
   const L = !both && l > 0.3 && l - r > 0.18;
   const R = !both && r > 0.3 && r - l > 0.18;
   $('eyeL').classList.toggle('on', L || both); $('eyeR').classList.toggle('on', R || both);
-  if (mode === 'setup') $('setupText').textContent = `left ${l.toFixed(2)} · right ${r.toFixed(2)} — close one eye at a time, keep the other open.`;
+  if (mode === 'setup') { $('setupTitle').textContent = 'Wink at me.'; $('setupText').textContent = `left ${l.toFixed(2)} · right ${r.toFixed(2)} — close one eye at a time, keep the other open.`; }
   const now = performance.now();
   const closed = L || R || both;
   if (!closed) { eye.armed = true; eye.pendingAt = 0; eye.L = eye.R = false; eye.both = false; return; }
@@ -254,6 +255,7 @@ function loop() {
       const res = landmarker.detectForVideo(video, performance.now());
       const bs = res.faceBlendshapes && res.faceBlendshapes[0];
       if (bs) { const get = (name) => (bs.categories.find((c) => c.categoryName === name) || {}).score || 0; handleEyes(get('eyeBlinkLeft'), get('eyeBlinkRight')); }
+      else if (mode === 'setup' && performance.now() - faceAt > 600) { $('setupTitle').textContent = 'Looking for your face…'; $('setupText').textContent = 'Hold the phone at arm\'s length, face in the middle.'; $('eyeL').classList.remove('on'); $('eyeR').classList.remove('on'); }
     } catch (e) { /* skip frame */ }
   }
   if (mode === 'playing') {
