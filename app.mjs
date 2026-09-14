@@ -13,7 +13,7 @@ let stats = { perfect: 0, good: 0, miss: 0, combo: 0, maxCombo: 0, score: 0 };
 let landmarker = null, stream = null, lastVideoTime = -1;
 let eye = { L: false, R: false, both: false, pendingAt: 0, armed: true };
 let blinkStats = { both: 0, single: 0 }; // auto fallback: only double blinks → both-eyes mode
-let faceBest = null, faceWorst = null, confetti = [], confettiAt = 0, pile = [], resultAt = 0;
+let faceBest = null, faceWorst = null, confetti = [], confettiAt = 0, pile = [], resultAt = 0, showcase = [], showIdx = 0, showAt = 0;
 let audioCtx = null, schedulerId = 0, nextBeat = 0, beatIndex = 0;
 
 // ---------- people (one walk image + reaction images per character) ----------
@@ -63,10 +63,10 @@ function scheduleBeats() {
   while (nextBeat < now + 0.25) {
     const i = beatIndex, beat = Math.floor(i / 4), sub = ((i % 4) + 4) % 4, eighth = Math.floor(i / 2);
     if (i < 0) { if (sub === 0) tone(150, nextBeat, 0.16, 'sine', 0.5, 40); noise(nextBeat, 0.04, 0.05); nextBeat += step; beatIndex++; continue; } // count-in: kick + hats only
-    if (sub === 0) tone(150, nextBeat, 0.16, 'sine', 0.42, 40);                        // kick on every beat
-    if (sub === 0 && beat % 2 === 1) { noise(nextBeat, 0.14, 0.16); tone(180, nextBeat, 0.08, 'triangle', 0.15); } // snare on 2 and 4
-    noise(nextBeat, sub % 2 ? 0.03 : 0.05, sub === 2 ? 0.09 : 0.045);                 // 16th hats, open on the offbeat
-    if (sub % 2 === 0) { const bnote = BASS[eighth % 8]; if (bnote) tone(bnote, nextBeat, step * 1.6, 'square', 0.07); }
+    if (sub === 0) tone(150, nextBeat, 0.16, 'sine', 0.7, 40);                        // kick on every beat
+    if (sub === 0 && beat % 2 === 1) { noise(nextBeat, 0.14, 0.26); tone(180, nextBeat, 0.08, 'triangle', 0.22); } // snare on 2 and 4
+    noise(nextBeat, sub % 2 ? 0.03 : 0.05, sub === 2 ? 0.13 : 0.07);                 // 16th hats, open on the offbeat
+    if (sub % 2 === 0) { const bnote = BASS[eighth % 8]; if (bnote) tone(bnote, nextBeat, step * 1.6, 'square', 0.11); }
     if (sub === 2 && beat % 2 === 0) CHORDS[Math.floor(beat / 2) % 4].forEach((f) => tone(f, nextBeat, 0.12, 'sawtooth', 0.025)); // offbeat stab
     if (sub % 2 === 0) { const m = MELODY[eighth % 32]; if (m) tone(m, nextBeat, 0.22, 'triangle', 0.05); }
     nextBeat += step; beatIndex++;
@@ -172,10 +172,10 @@ function endRound() {
   const total = notes.length, hits = stats.perfect + stats.good, pct = total ? Math.round(hits / total * 100) : 0;
   $('rPct').textContent = pct + '%'; $('rLine').textContent = hits + ' of ' + total + ' swept off their feet';
   $('resultTitle').textContent = pct >= 90 ? 'Irresistible.' : pct >= 70 ? 'Dangerous charm.' : pct >= 40 ? 'Getting there.' : 'They called security.';
-  // everyone you swept off their feet tumbles in from the top and piles up (each character once)
-  pile = []; const seen = new Set();
-  for (const n of notes) { if (!(n.hit === 'perfect' || n.hit === 'good')) continue; const lanes = n.lane === 2 ? [0, 1] : [n.lane]; for (const l of lanes) { const who = l === 1 && n.lane === 2 ? n.who2 : n.who; if (!seen.has(who)) seen.add(who); } }
-  [...seen].forEach((who, i) => pile.push({ who, x: 60 + Math.random() * (W - 120), y: -260 - Math.random() * 160, vy: 0, vx: (Math.random() - .5) * 60, rot: (Math.random() - .5) * 0.8, spin: (Math.random() - .5) * 5, delay: 0.5 + i * 0.28, landed: false, squash: 0, scale: 0.95 }));
+  // the people you swept off their feet, one at a time, big, half in frame, swaying
+  const seen = new Set();
+  for (const n of notes) { if (!(n.hit === 'perfect' || n.hit === 'good')) continue; const lanes = n.lane === 2 ? [0, 1] : [n.lane]; for (const l of lanes) seen.add(l === 1 && n.lane === 2 ? n.who2 : n.who); }
+  showcase = [...seen]; showIdx = 0; showAt = performance.now();
   show('rbtns', false); clearTimeout(endRound.t); endRound.t = setTimeout(() => show('rbtns'), 5000);
   resultAt = performance.now();
   confetti = Array.from({ length: 90 }, () => ({ x: Math.random() * W, y: -Math.random() * H, vx: (Math.random() - .5) * 40, vy: 80 + Math.random() * 120, r: 4 + Math.random() * 5, c: ['#ff5c8a', '#ffb3c8', '#b58cff', '#ffe052', '#fff7fb'][Math.floor(Math.random() * 5)], a: Math.random() * TAU }));
@@ -241,6 +241,7 @@ function handleEyes(rawL, rawR) {
 }
 // tap practice: left third = left eye, right third = right eye, middle = both
 $('phone').addEventListener('pointerdown', (e) => {
+  if (mode === 'result' && showcase.length > 1 && !e.target.closest('button')) { showIdx = (showIdx + 1) % showcase.length; showAt = performance.now(); sfx('good'); return; }
   if (!practice || mode !== 'playing') return;
   const r = $('phone').getBoundingClientRect(), x = (e.clientX - r.left) / r.width;
   const lane = x < 0.38 ? 0 : x > 0.62 ? 1 : 2;
@@ -305,19 +306,16 @@ function drawInner() {
   ctx.clearRect(0, 0, W, H);
   if (mode === 'result') {
     const t = (performance.now() - resultAt) / 1000;
-    const bodyW = PERSON_H * 0.55, bodyH = PERSON_H * 0.95; // rough box of a standing sprite at scale .95
-    for (const p of pile) {
-      if (t < p.delay) continue;
-      if (!p.landed) {
-        p.vy += 1500 * dt; p.y += p.vy * dt; p.x += p.vx * dt; p.rot += p.spin * dt;
-        const tilt = Math.abs(Math.sin(p.rot)); const hNow = bodyH * (1 - tilt * 0.45); // a tilted body is shorter
-        let floor = H * 0.985;
-        for (const q of pile) { if (q === p || !q.landed) continue; const qw = bodyW * 1.1 + Math.abs(Math.sin(q.rot)) * bodyH * 0.5; if (Math.abs(q.x - p.x) < qw * 0.75) floor = Math.min(floor, q.top); }
-        if (p.y >= floor) { p.y = floor; p.landed = true; p.top = floor - hNow * 0.9; p.squash = 1; p.rot = Math.max(-0.6, Math.min(0.6, p.rot + (Math.random() - .5) * 0.3)); sfx('land'); }
-        if (p.x < 40) { p.x = 40; p.vx *= -0.5; } if (p.x > W - 40) { p.x = W - 40; p.vx *= -0.5; }
-      } else p.squash = Math.max(0, p.squash - dt * 4);
-      const sq = p.squash * 0.16; ctx.save(); ctx.translate(p.x, p.y); ctx.scale(1 + sq, 1 - sq); ctx.translate(-p.x, -p.y);
-      sprite(PEOPLE[p.who].down, p.x, p.y, { scale: p.scale, rot: p.rot }); ctx.restore();
+    if (showcase.length) {
+      const HOLD = 2.2, age = (performance.now() - showAt) / 1000;
+      if (age > HOLD) { showIdx = (showIdx + 1) % showcase.length; showAt = performance.now(); if (showcase.length > 1) sfx('good'); }
+      const who = showcase[showIdx], k = Math.min(1, age / 0.35), ease = 1 - Math.pow(1 - k, 3);
+      const bigH = H * 1.05, scale = bigH / PERSON_H;                     // upper half in frame, feet below the bottom edge
+      const baseY = H + bigH * 0.5 + (1 - ease) * bigH * 0.5;              // slides up from below
+      const sway = Math.sin(age * 4.2) * 0.07 * (1 - Math.max(0, age - HOLD + 0.3) / 0.3); // rocks left and right
+      ctx.save(); ctx.translate(W / 2, baseY); ctx.rotate(sway); ctx.translate(-W / 2, -baseY);
+      sprite(PEOPLE[who].down, W / 2, baseY, { scale }); ctx.restore();
+      if (showcase.length > 1) { ctx.fillStyle = 'rgba(255,255,255,.55)'; ctx.font = '700 11px system-ui'; ctx.textAlign = 'center'; ctx.fillText(`${showIdx + 1} / ${showcase.length}`, W / 2, H * 0.44); }
     }
     const dtc = (performance.now() - confettiAt) / 1000;
     for (const c of confetti) { const y = c.y + c.vy * dtc, x = c.x + c.vx * dtc + Math.sin(dtc * 3 + c.a) * 12; if (y > H + 10) continue; ctx.save(); ctx.translate(x, y); ctx.rotate(c.a + dtc * 4); ctx.fillStyle = c.c; ctx.fillRect(-c.r / 2, -c.r, c.r, c.r * 2); ctx.restore(); }
