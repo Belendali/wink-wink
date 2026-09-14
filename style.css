@@ -46,3 +46,12 @@ h2 { font-size: 24px; margin: 8px 0 8px; }
 .faces span { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); display: block; margin-top: 6px; }
 
 .phone.setup .hud-top, .phone.setup .judge { display: none; }
+
+.howto { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 10px; text-align: center; color: #fff; background: rgba(26,15,46,.35); pointer-events: none; animation: howin .4s ease-out; }
+.howto b { font-size: 22px; text-shadow: 0 2px 8px rgba(0,0,0,.4); }
+.howto span { font-size: 13px; opacity: .8; max-width: 260px; line-height: 1.5; }
+@keyframes howin { from { opacity: 0; transform: scale(.94); } to { opacity: 1; transform: none; } }
+.result .big { margin: 6px 0 10px; }
+.result .big b { display: block; font-size: 64px; line-height: 1; color: var(--pink); }
+.result .big span { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--dim); }
+.confetti { position: absolute; inset: 0; pointer-events: none; }

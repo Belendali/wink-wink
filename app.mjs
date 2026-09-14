@@ -13,8 +13,22 @@ let stats = { perfect: 0, good: 0, miss: 0, combo: 0, maxCombo: 0, score: 0 };
 let landmarker = null, stream = null, lastVideoTime = -1;
 let eye = { L: false, R: false, both: false, pendingAt: 0, armed: true };
 let calib = { L: false, R: false, startedAt: 0 };
-let faceBest = null, faceWorst = null;
+let faceBest = null, faceWorst = null, confetti = [], confettiAt = 0;
 let audioCtx = null, schedulerId = 0, nextBeat = 0, beatIndex = 0;
+
+// ---------- people (one walk image + reaction images per character) ----------
+const PEOPLE = [{ walk: 'assets/people/p01-walk.png', good: 'assets/people/p01-good.png', down: 'assets/people/p01-down.png' }];
+const IMG = {};
+function loadImg(src) { if (IMG[src]) return IMG[src]; const i = new Image(); i.src = src; IMG[src] = i; return i; }
+PEOPLE.forEach((p) => Object.values(p).forEach(loadImg));
+const ready = (src) => { const i = IMG[src]; return i && i.complete && i.naturalWidth > 0; };
+const PERSON_H = 170;
+function sprite(src, x, baseY, opts = {}) {
+  const img = loadImg(src); if (!ready(src)) return false;
+  const h = PERSON_H * (opts.scale || 1), w = h * img.naturalWidth / img.naturalHeight;
+  ctx.save(); ctx.translate(x, baseY); ctx.rotate(opts.rot || 0); ctx.globalAlpha = opts.alpha ?? 1;
+  ctx.drawImage(img, -w / 2, -h, w, h); ctx.restore(); return true;
+}
 
 // ---------- sizing ----------
 function resize() {
@@ -78,19 +92,19 @@ function makeChart() {
     if (rnd() < 0.7) { lane = 1 - lane; }
     list.push({ t, lane });
   }
-  return list.map((n, i) => ({ ...n, id: i, hit: null }));
+  return list.map((n, i) => ({ ...n, id: i, hit: null, who: i % PEOPLE.length, who2: (i + 1) % PEOPLE.length }));
 }
 
 // ---------- flow ----------
 function show(id, on = true) { $(id).classList.toggle('hidden', !on); }
-function setMode(m) { mode = m; $('phone').classList.toggle('setup', m === 'setup'); show('startPanel', m === 'idle'); show('setupPanel', m === 'setup'); show('hud', m === 'playing' || m === 'countdown' || m === 'setup'); show('resultPanel', m === 'result'); show('countdown', m === 'countdown'); }
+function setMode(m) { mode = m; $('phone').classList.toggle('setup', m === 'setup'); show('startPanel', m === 'idle'); show('setupPanel', m === 'setup'); show('hud', ['playing', 'countdown', 'setup', 'howto'].includes(m)); show('resultPanel', m === 'result'); show('countdown', m === 'countdown'); show('howto', m === 'howto'); }
 
 $('play').onclick = () => { ensureAudio(); practice = false; startSetup(); };
 $('practice').onclick = () => { ensureAudio(); practice = true; bothMode = false; stopCamera(); beginCountdown(); };
 $('startRound').onclick = () => beginCountdown();
 $('bothMode').onclick = () => { bothMode = true; beginCountdown(); };
 $('replay').onclick = () => beginCountdown();
-$('home').onclick = () => { stopCamera(); setMode('idle'); };
+$('home').onclick = () => { clearTimeout(beginCountdown.t); stopCamera(); setMode('idle'); };
 
 async function startSetup() {
   setMode('setup'); show('calib', false); show('startRound', false); show('bothMode', false);
@@ -119,7 +133,11 @@ async function startCamera() {
 function stopCamera() { if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; video.srcObject = null; } }
 
 function beginCountdown() {
-  ensureAudio(); notes = makeChart(); effects = []; faceBest = faceWorst = null;
+  ensureAudio(); setMode('howto');
+  clearTimeout(beginCountdown.t); beginCountdown.t = setTimeout(startCountdown, 2000);
+}
+function startCountdown() {
+  notes = makeChart(); effects = []; faceBest = faceWorst = null; confetti = [];
   stats = { perfect: 0, good: 0, miss: 0, combo: 0, maxCombo: 0, score: 0 }; updateHud();
   setMode('countdown'); let n = 3; $('countdown').textContent = n; sfx('count');
   const iv = setInterval(() => { n--; if (n > 0) { $('countdown').textContent = n; sfx('count'); } else { clearInterval(iv); $('countdown').textContent = ''; sfx('go'); startRound(); } }, 700);
@@ -130,7 +148,7 @@ function startRound() {
 function endRound() {
   clearTimeout(schedulerId); setMode('result');
   const total = notes.length, hits = stats.perfect + stats.good, acc = total ? Math.round(hits / total * 100) : 0;
-  $('rAcc').textContent = acc + '%'; $('rCombo').textContent = stats.maxCombo; $('rDown').textContent = stats.perfect;
+  $('rAcc').textContent = acc + '%'; $('rCombo').textContent = stats.maxCombo; $('rDown').textContent = hits; confetti = Array.from({ length: 90 }, () => ({ x: Math.random() * W, y: -Math.random() * H, vx: (Math.random() - .5) * 40, vy: 80 + Math.random() * 120, r: 4 + Math.random() * 5, c: ['#ff5c8a', '#ffb3c8', '#b58cff', '#ffe052', '#fff7fb'][Math.floor(Math.random() * 5)], a: Math.random() * TAU })); confettiAt = performance.now();
   const title = acc >= 90 ? 'Heartbreaker' : acc >= 70 ? 'Smooth operator' : acc >= 40 ? 'Still trying' : 'Someone called security';
   $('resultTitle').textContent = title;
   paintFace($('faceBest'), faceBest); paintFace($('faceWorst'), faceWorst);
@@ -212,7 +230,8 @@ function paintFace(target, src) {
 const TAU = Math.PI * 2;
 function draw() {
   ctx.clearRect(0, 0, W, H);
-  if (mode !== 'playing' && mode !== 'countdown' && mode !== 'result') return;
+  if (mode === 'result' && confetti.length) { const dt = (performance.now() - confettiAt) / 1000; for (const c of confetti) { const y = c.y + c.vy * dt, x = c.x + c.vx * dt + Math.sin(dt * 3 + c.a) * 12; if (y > H + 10) continue; ctx.save(); ctx.translate(x, y); ctx.rotate(c.a + dt * 4); ctx.fillStyle = c.c; ctx.fillRect(-c.r / 2, -c.r, c.r, c.r * 2); ctx.restore(); } return; }
+  if (!['playing', 'countdown', 'howto'].includes(mode)) return;
   // lanes
   ctx.fillStyle = 'rgba(26,15,46,.22)'; ctx.fillRect(0, 0, W, H);
   for (const x of LANE_X) { ctx.strokeStyle = 'rgba(255,255,255,.18)'; ctx.lineWidth = 2; ctx.setLineDash([6, 10]); ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, H); ctx.stroke(); ctx.setLineDash([]); }
@@ -222,26 +241,42 @@ function draw() {
   ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = '700 11px system-ui'; ctx.textAlign = 'center';
   ctx.fillText('LEFT EYE', LANE_X[0], hy + 56); ctx.fillText('RIGHT EYE', LANE_X[1], hy + 56);
   if (mode !== 'playing') return;
-  // notes
   ctx.font = '44px system-ui'; ctx.textBaseline = 'middle';
+  const walkAnim = (n, k) => { const step = songTime * 7 + n.id; return { rot: Math.sin(step) * 0.06, bob: Math.abs(Math.sin(step)) * 8, scale: 0.72 + 0.28 * k }; };
+  const drawWalker = (n, x, y, k, alpha = 1) => { const a = walkAnim(n, k); if (!sprite(PEOPLE[n.who].walk, x, y + 70 - a.bob, { rot: a.rot, scale: a.scale, alpha })) { ctx.globalAlpha = alpha; ctx.fillText(n.lane === 1 ? '😐' : '🙂', x, y); ctx.globalAlpha = 1; } };
   for (const n of notes) {
-    const dt = n.t - songTime; if (dt > LEAD || dt < -0.5) continue;
-    const y = hy - (dt / LEAD) * (hy + 40);
-    if (n.hit === 'miss') { const k = Math.min(1, (songTime - n.t) / 0.4); const x = n.lane === 2 ? W / 2 : LANE_X[n.lane]; ctx.globalAlpha = 1 - k; ctx.fillText('🙄', x + (n.lane === 1 ? 1 : -1) * k * 60, y); ctx.globalAlpha = 1; continue; }
-    if (n.hit) continue;
-    if (n.lane === 2) { ctx.fillStyle = 'rgba(181,140,255,.35)'; roundRect(LANE_X[0] - 40, y - 30, LANE_X[1] - LANE_X[0] + 80, 60, 30); ctx.fill(); ctx.fillText('👫', W / 2, y); }
-    else ctx.fillText(n.lane === 0 ? '🙂' : '😐', LANE_X[n.lane], y);
+    const dt = n.t - songTime; if (dt > LEAD || dt < -1.1) continue;
+    const k = 1 - dt / LEAD, y = hy - (dt / LEAD) * (hy + 60);
+    const lanes = n.lane === 2 ? [0, 1] : [n.lane];
+    if (n.hit === 'miss') { const m = Math.min(1, (songTime - n.t) / 0.7); for (const l of lanes) drawWalker(n, LANE_X[l], hy + m * 120, 1, 1 - m); continue; }
+    if (n.hit) {
+      const m = Math.min(1, (songTime - n.hitAt) / 0.8);
+      for (const l of lanes) {
+        const x = LANE_X[l], dir = l === 0 ? -1 : 1;
+        if (n.hit === 'perfect') { // swoon and topple sideways, face to the floor
+          const rot = dir * Math.min(1, m * 1.6) * Math.PI / 2;
+          if (!sprite(PEOPLE[n.who].down, x + dir * m * 26, hy + 70 + m * 10, { rot, alpha: 1 - Math.max(0, m - 0.75) * 4 })) { ctx.globalAlpha = 1 - m; ctx.fillText('😍', x, hy - m * 60); ctx.globalAlpha = 1; }
+        } else { // good: blush, wobble, fade
+          if (!sprite(PEOPLE[n.who].good, x, hy + 70, { rot: Math.sin(m * 12) * 0.08 * (1 - m), alpha: 1 - Math.max(0, m - 0.5) * 2 })) { ctx.globalAlpha = 1 - m; ctx.fillText('☺️', x, hy - m * 40); ctx.globalAlpha = 1; }
+        }
+      }
+      continue;
+    }
+    if (n.lane === 2) { ctx.fillStyle = 'rgba(181,140,255,.22)'; roundRect(LANE_X[0] - 60, y - 40, LANE_X[1] - LANE_X[0] + 120, 110, 40); ctx.fill(); }
+    for (const l of lanes) drawWalker(n, LANE_X[l], y, k);
   }
-  // effects
+  // hearts and sparks
   for (const e of effects) {
-    const k = (songTime - e.at) / 0.6; if (k > 1) continue;
-    const x = e.lane === 2 ? W / 2 : LANE_X[e.lane];
-    ctx.globalAlpha = 1 - k; ctx.font = (44 + k * 30) + 'px system-ui';
-    ctx.fillText(e.kind === 'miss' ? '💢' : e.kind === 'perfect' ? '😍' : '☺️', x, hy - k * 90);
-    if (e.kind === 'perfect') for (let i = 0; i < 4; i++) { const a = i * TAU / 4 + k * 3; ctx.font = '18px system-ui'; ctx.fillText('💗', x + Math.cos(a) * (40 + k * 60), hy + Math.sin(a) * (30 + k * 40)); }
-    ctx.globalAlpha = 1;
+    const k = (songTime - e.at) / 0.7; if (k > 1) continue;
+    const xs = e.lane === 2 ? LANE_X : [LANE_X[e.lane]];
+    for (const x of xs) {
+      ctx.globalAlpha = 1 - k;
+      if (e.kind === 'miss') { ctx.font = '36px system-ui'; ctx.fillText('💢', x + 40, hy - 100 - k * 40); }
+      else { const n = e.kind === 'perfect' ? 7 : 3; for (let i = 0; i < n; i++) { const a = i * TAU / n + k * 2 + e.at; ctx.font = (14 + (i % 3) * 6) + 'px system-ui'; ctx.fillText('💗', x + Math.cos(a) * (30 + k * 80), hy - 60 - k * 120 + Math.sin(a) * 20); } }
+      ctx.globalAlpha = 1;
+    }
   }
-  effects = effects.filter((e) => songTime - e.at < 0.6);
+  effects = effects.filter((e) => songTime - e.at < 0.7);
   ctx.textBaseline = 'alphabetic';
 }
 function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.arcTo(x + w, y, x + w, y + h, r); ctx.arcTo(x + w, y + h, x, y + h, r); ctx.arcTo(x, y + h, x, y, r); ctx.arcTo(x, y, x + w, y, r); ctx.closePath(); }

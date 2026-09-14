@@ -18,7 +18,7 @@
       <div class="hud-top">
         <div class="score"><b id="score">0</b><span>charm</span></div>
         <div class="combo"><b id="combo">0</b><span>combo</span></div>
-        <div class="time"><b id="time">20</b><span>sec</span></div>
+        <div class="time"><b id="time">15</b><span>sec</span></div>
       </div>
       <div id="judge" class="judge"></div>
       <div class="eyes"><span id="eyeL" class="eye">L</span><span id="eyeR" class="eye">R</span></div>
@@ -49,16 +49,24 @@
       </div>
     </div>
 
+    <div id="howto" class="howto hidden">
+      <svg viewBox="0 0 200 80" width="200" height="80" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+        <path d="M14 40 C 34 14, 66 14, 86 40 C 66 66, 34 66, 14 40 Z"/><circle cx="50" cy="40" r="10" fill="#fff"/>
+        <path d="M114 44 C 134 66, 166 66, 186 44"/><path d="M126 52 l-6 9 M150 58 l0 11 M174 52 l6 9"/>
+      </svg>
+      <b>Close one eye to the beat</b>
+      <span>Left eye for the left lane. Right eye for the right. Both for the couples.</span>
+    </div>
     <div id="countdown" class="countdown hidden"></div>
 
     <div id="resultPanel" class="panel hidden">
       <div class="card result">
         <div class="kicker" id="resultKicker">CHARM REPORT</div>
         <h2 id="resultTitle">Heartbreaker</h2>
+        <div class="big"><b id="rDown">0</b><span>swept off their feet</span></div>
         <div class="stats">
           <div><b id="rAcc">0%</b><span>accuracy</span></div>
           <div><b id="rCombo">0</b><span>max combo</span></div>
-          <div><b id="rDown">0</b><span>swept off feet</span></div>
         </div>
         <div class="faces">
           <div><canvas id="faceBest" width="160" height="200"></canvas><span>Best wink</span></div>
@@ -70,6 +78,6 @@
     </div>
   </section>
 </main>
-<script type="module" src="./app.mjs?v=4"></script>
+<script type="module" src="./app.mjs?v=5"></script>
 </body>
 </html>
