@@ -330,9 +330,10 @@ function drawInner() {
   // judge targets
   const hy = H * HIT_Y;
   LANE_X.forEach((x, i) => {
-    pulse[i] += dt; const k = Math.min(1, pulse[i] / 0.5), beat = Math.sin(Math.min(1, pulse[i] / 0.18) * Math.PI); // quick swell then settle
-    heartPath(x, hy, 36 * (1 + beat * 0.22)); ctx.strokeStyle = '#ffb3c8'; ctx.lineWidth = 3.5; ctx.stroke();
-    if (k < 1) { ctx.globalAlpha = 1 - k; heartPath(x, hy, 36 * (1 + k * 1.1)); ctx.strokeStyle = '#ff5c8a'; ctx.lineWidth = 3 * (1 - k) + 0.5; ctx.stroke(); ctx.globalAlpha = 1; } // expanding echo, like a heartbeat
+    pulse[i] += dt; const k = Math.min(1, pulse[i] / 0.45);
+    ctx.beginPath(); ctx.arc(x, hy, 40, 0, TAU); ctx.fillStyle = 'rgba(255,255,255,.07)'; ctx.fill();          // soft target disc
+    ctx.beginPath(); ctx.arc(x, hy, 40, 0, TAU); ctx.strokeStyle = 'rgba(255,255,255,.35)'; ctx.lineWidth = 1.5; ctx.stroke();
+    if (k < 1) { ctx.beginPath(); ctx.arc(x, hy, 40 * (1 + k * 0.55), 0, TAU); ctx.fillStyle = `rgba(255,92,138,${0.42 * (1 - k)})`; ctx.fill(); } // wink ripple: a soft disc spreading out
   });
   ctx.fillStyle = 'rgba(255,255,255,.75)'; ctx.font = '700 11px system-ui'; ctx.textAlign = 'center';
   ctx.fillText('LEFT EYE', LANE_X[0], hy + 58); ctx.fillText('RIGHT EYE', LANE_X[1], hy + 58);
@@ -359,7 +360,10 @@ function drawInner() {
       continue;
     }
     if (n.lane === 2) { ctx.fillStyle = 'rgba(181,140,255,.22)'; roundRect(LANE_X[0] - 60, y - 40, LANE_X[1] - LANE_X[0] + 120, 110, 40); ctx.fill(); }
-    for (const l of lanes) drawWalker(n, LANE_X[l], y, k, 1, l === 1 && n.lane === 2 ? n.who2 : n.who);
+    for (const l of lanes) { // the pedestrian's own circle: it lines up with the target disc when it is time to wink
+      const near = Math.max(0, (k - 0.45) / 0.55); ctx.beginPath(); ctx.arc(LANE_X[l], y, 40, 0, TAU); ctx.fillStyle = `rgba(255,92,138,${0.08 + near * 0.3})`; ctx.fill();
+      drawWalker(n, LANE_X[l], y, k, 1, l === 1 && n.lane === 2 ? n.who2 : n.who);
+    }
   }
   // hearts and sparks
   for (const e of effects) {
