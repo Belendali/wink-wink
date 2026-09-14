@@ -71,3 +71,10 @@ h2 { font-size: 24px; margin: 8px 0 8px; }
 
 .howto em { font-style: normal; margin-top: 18px; font-size: 15px; font-weight: 700; letter-spacing: .14em; text-transform: uppercase; color: #ffe052; animation: pulse 1.2s ease-in-out infinite; }
 @keyframes pulse { 0%, 100% { opacity: .55; } 50% { opacity: 1; } }
+
+.card.gate { padding: 26px 22px 20px; }
+.card.gate svg { display: block; margin: 0 auto 6px; }
+.card.gate h2 { margin: 6px 0 4px; }
+.card.gate p { margin-bottom: 14px; }
+.howto { justify-content: flex-start; padding-top: 34%; background: rgba(26,15,46,.22); }
+.howto b { font-size: 20px; }

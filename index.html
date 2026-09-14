@@ -25,38 +25,34 @@
     </div>
 
     <div id="startPanel" class="panel">
-      <div class="card">
-        <div class="kicker">WINK WINK</div>
-        <h1>Wink to the beat.</h1>
-        <p>People walk by on both sides. Close your <b>left eye</b> for the left lane, your <b>right eye</b> for the right. Both eyes for the big ones.</p>
-        <button id="play" class="btn">Let's play</button>
-        <p class="tiny">Allow the camera. Everything stays on your device.</p>
-        <button id="practice" class="link">Try tap practice</button>
+      <div class="card gate">
+        <svg viewBox="0 0 48 48" width="44" height="44" fill="none" stroke="#2a1740" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><rect x="5" y="12" width="30" height="24" rx="5"/><path d="M35 20l8-5v18l-8-5"/><circle cx="20" cy="24" r="6"/></svg>
+        <h2>Allow the camera</h2>
+        <p>Everything stays on your phone.</p>
+        <button id="play" class="btn">Open camera</button>
+        <button id="practice" class="link">No camera? Tap practice</button>
       </div>
     </div>
 
     <div id="setupPanel" class="panel hidden">
       <div class="card">
         <div class="kicker" id="setupKicker">CAMERA</div>
-        <h2 id="setupTitle">Loading the face tracker…</h2>
+        <h2 id="setupTitle">Loading…</h2>
         <p id="setupText">One second.</p>
-        <div id="calib" class="calib hidden">
-          <div class="calib-row"><span>Left eye</span><i id="calL"></i></div>
-          <div class="calib-row"><span>Right eye</span><i id="calR"></i></div>
-        </div>
+        <div id="calib" class="calib hidden"></div>
         <button id="startRound" class="btn hidden">Start</button>
-        <button id="bothMode" class="link hidden">I can't wink. Use both eyes.</button>
+        <button id="bothMode" class="link hidden">Use both eyes</button>
       </div>
     </div>
 
     <div id="howto" class="howto hidden">
-      <svg viewBox="0 0 200 80" width="200" height="80" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
+      <svg viewBox="0 0 200 80" width="150" height="60" fill="none" stroke="#fff" stroke-width="4" stroke-linecap="round" stroke-linejoin="round">
         <path d="M14 40 C 34 14, 66 14, 86 40 C 66 66, 34 66, 14 40 Z"/><circle cx="50" cy="40" r="10" fill="#fff"/>
         <path d="M114 44 C 134 66, 166 66, 186 44"/><path d="M126 52 l-6 9 M150 58 l0 11 M174 52 l6 9"/>
       </svg>
-      <b>Close one eye to the beat</b>
-      <span>Left eye for the left lane. Right eye for the right. Both for the couples.</span>
-      <em id="howtoCta">Blink to start</em>
+      <b>Wink to sweep them off their feet</b>
+      <span>Left eye for the left lane, right eye for the right.</span>
+      <em id="howtoCta">Wink to start</em>
     </div>
     <div id="countdown" class="countdown hidden"></div>
 
@@ -73,6 +69,6 @@
     </div>
   </section>
 </main>
-<script type="module" src="./app.mjs?v=25"></script>
+<script type="module" src="./app.mjs?v=26"></script>
 </body>
 </html>

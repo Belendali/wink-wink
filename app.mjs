@@ -167,6 +167,12 @@ function startCountdown() {
   const iv = setInterval(() => { n--; if (n > 0) { $('countdown').textContent = n; sfx('count'); } else { clearInterval(iv); $('countdown').textContent = ''; sfx('go'); startRound(); } }, BEAT * 1000);
 }
 function startRound() { if (DEBUG) dlog('round start'); setMode('playing'); }
+function startNow() { // camera flow: the first wink is the start button, no countdown
+  notes = makeChart(); effects = []; confetti = []; blinkStats = { both: 0, single: 0 };
+  stats = { perfect: 0, good: 0, miss: 0, combo: 0, maxCombo: 0, score: 0 }; updateHud();
+  ensureAudio(); startAt = audioCtx.currentTime + 0.05; nextBeat = startAt; beatIndex = 0; clearTimeout(schedulerId); scheduleBeats(); sfx('go');
+  startRound();
+}
 function endRound() {
   clearTimeout(schedulerId); setMode('result'); sfx('win');
   const total = notes.length, hits = stats.perfect + stats.good, pct = total ? Math.round(hits / total * 100) : 0;
@@ -234,7 +240,7 @@ function handleEyes(rawL, rawR) {
   if (now - eye.pendingAt >= 70) {
     eye.armed = false;
     const isBoth = eye.both || (eye.L && eye.R);
-    if (mode === 'howto' && !practice) { startCountdown(); }
+    if (mode === 'howto' && !practice) { startNow(); }
     else if (mode === 'playing') { if (isBoth) blinkStats.both++; else blinkStats.single++; if (!bothMode && blinkStats.both >= 4 && blinkStats.single === 0) { bothMode = true; judge('BOTH EYES MODE'); } const lane = bothMode ? 2 : isBoth ? 2 : eye.L ? 0 : 1; shootHearts(lane, 3); fire(lane); }
     eye.L = eye.R = false; eye.both = false;
   }
