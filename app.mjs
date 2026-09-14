@@ -13,7 +13,7 @@ let stats = { perfect: 0, good: 0, miss: 0, combo: 0, maxCombo: 0, score: 0 };
 let landmarker = null, stream = null, lastVideoTime = -1;
 let eye = { L: false, R: false, both: false, pendingAt: 0, armed: true };
 let blinkStats = { both: 0, single: 0 }; // auto fallback: only double blinks → both-eyes mode
-let faceBest = null, faceWorst = null, confetti = [], confettiAt = 0;
+let faceBest = null, faceWorst = null, confetti = [], confettiAt = 0, pile = [], resultAt = 0;
 let audioCtx = null, schedulerId = 0, nextBeat = 0, beatIndex = 0;
 
 // ---------- people (one walk image + reaction images per character) ----------
@@ -150,11 +150,16 @@ function startRound() {
 }
 function endRound() {
   clearTimeout(schedulerId); setMode('result'); sfx('win');
-  const total = notes.length, hits = stats.perfect + stats.good, acc = total ? Math.round(hits / total * 100) : 0;
-  $('rAcc').textContent = acc + '%'; $('rCombo').textContent = stats.maxCombo; $('rDown').textContent = hits; confetti = Array.from({ length: 90 }, () => ({ x: Math.random() * W, y: -Math.random() * H, vx: (Math.random() - .5) * 40, vy: 80 + Math.random() * 120, r: 4 + Math.random() * 5, c: ['#ff5c8a', '#ffb3c8', '#b58cff', '#ffe052', '#fff7fb'][Math.floor(Math.random() * 5)], a: Math.random() * TAU })); confettiAt = performance.now();
-  const title = acc >= 90 ? 'Heartbreaker' : acc >= 70 ? 'Smooth operator' : acc >= 40 ? 'Still trying' : 'Someone called security';
-  $('resultTitle').textContent = title;
-  paintFace($('faceBest'), faceBest); paintFace($('faceWorst'), faceWorst);
+  const total = notes.length, hits = stats.perfect + stats.good, pct = total ? Math.round(hits / total * 100) : 0;
+  $('rPct').textContent = pct + '%'; $('rLine').textContent = hits + ' of ' + total + ' swept off their feet';
+  $('resultTitle').textContent = pct >= 90 ? 'Irresistible.' : pct >= 70 ? 'Dangerous charm.' : pct >= 40 ? 'Getting there.' : 'They called security.';
+  $('replay').textContent = pct >= 70 ? 'Do it again' : 'One more round';
+  // everyone you met falls from the sky and piles up
+  pile = []; let i = 0;
+  for (const n of notes) { const lanes = n.lane === 2 ? [0, 1] : [n.lane]; for (const l of lanes) { const who = l === 1 && n.lane === 2 ? n.who2 : n.who; const fell = n.hit === 'perfect' || n.hit === 'good'; pile.push({ who, fell, x: 40 + Math.random() * (W - 80), y: -200 - Math.random() * 200, gy: H * (0.62 + Math.random() * 0.33), vy: 0, rot: (Math.random() - .5) * 0.4, spin: (Math.random() - .5) * 6, delay: i * 0.08 + Math.random() * 0.2, landed: false }); i++; } }
+  resultAt = performance.now();
+  confetti = Array.from({ length: 90 }, () => ({ x: Math.random() * W, y: -Math.random() * H, vx: (Math.random() - .5) * 40, vy: 80 + Math.random() * 120, r: 4 + Math.random() * 5, c: ['#ff5c8a', '#ffb3c8', '#b58cff', '#ffe052', '#fff7fb'][Math.floor(Math.random() * 5)], a: Math.random() * TAU }));
+  confettiAt = resultAt;
 }
 
 // ---------- input ----------
@@ -255,7 +260,17 @@ const TAU = Math.PI * 2; let lastDraw = 0;
 function draw() {
   const nowMs = performance.now(), dt = Math.min(0.05, (nowMs - lastDraw) / 1000 || 0); lastDraw = nowMs;
   ctx.clearRect(0, 0, W, H);
-  if (mode === 'result' && confetti.length) { const dt = (performance.now() - confettiAt) / 1000; for (const c of confetti) { const y = c.y + c.vy * dt, x = c.x + c.vx * dt + Math.sin(dt * 3 + c.a) * 12; if (y > H + 10) continue; ctx.save(); ctx.translate(x, y); ctx.rotate(c.a + dt * 4); ctx.fillStyle = c.c; ctx.fillRect(-c.r / 2, -c.r, c.r, c.r * 2); ctx.restore(); } return; }
+  if (mode === 'result') {
+    const t = (performance.now() - resultAt) / 1000;
+    for (const p of pile) {
+      if (t < p.delay) continue;
+      if (!p.landed) { p.vy += 1400 * dt; p.y += p.vy * dt; p.rot += p.spin * dt; if (p.y >= p.gy) { p.y = p.gy; p.landed = true; p.rot = p.fell ? (p.rot > 0 ? 1 : -1) * (Math.PI / 2 + (Math.random() - .5) * 0.3) : (Math.random() - .5) * 0.5; } }
+      sprite(p.fell ? PEOPLE[p.who].down : PEOPLE[p.who].walk, p.x, p.y, { rot: p.rot, scale: 0.8, alpha: p.fell ? 1 : 0.55 });
+    }
+    const dtc = (performance.now() - confettiAt) / 1000;
+    for (const c of confetti) { const y = c.y + c.vy * dtc, x = c.x + c.vx * dtc + Math.sin(dtc * 3 + c.a) * 12; if (y > H + 10) continue; ctx.save(); ctx.translate(x, y); ctx.rotate(c.a + dtc * 4); ctx.fillStyle = c.c; ctx.fillRect(-c.r / 2, -c.r, c.r, c.r * 2); ctx.restore(); }
+    return;
+  }
   if (mode === 'setup') { drawHearts(dt); return; }
   if (!['playing', 'countdown', 'howto'].includes(mode)) return;
   // lanes

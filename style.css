@@ -55,3 +55,11 @@ h2 { font-size: 24px; margin: 8px 0 8px; }
 .result .big b { display: block; font-size: 64px; line-height: 1; color: var(--pink); }
 .result .big span { font-size: 12px; letter-spacing: .16em; text-transform: uppercase; color: var(--dim); }
 .confetti { position: absolute; inset: 0; pointer-events: none; }
+
+.resultlite { position: absolute; inset: 0; pointer-events: none; }
+.rhead { position: absolute; left: 0; right: 0; top: 16%; text-align: center; color: #fff; text-shadow: 0 3px 0 #2a1740, 0 0 24px rgba(255,92,138,.6); animation: howin .5s ease-out; }
+.rhead b { display: block; font-size: 92px; line-height: 1; font-weight: 900; }
+.rhead > span { display: block; font-size: 13px; letter-spacing: .22em; text-transform: uppercase; opacity: .9; margin-top: 6px; }
+.rhead em { display: block; font-style: normal; font-size: 26px; font-weight: 800; margin-top: 10px; color: #ffe052; }
+.rbtns { position: absolute; left: 22px; right: 22px; bottom: max(22px, env(safe-area-inset-bottom)); pointer-events: auto; display: flex; flex-direction: column; align-items: center; }
+.rbtns .link { color: #fff; margin-top: 8px; }
