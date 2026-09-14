@@ -78,3 +78,4 @@ h2 { font-size: 24px; margin: 8px 0 8px; }
 .card.gate p { margin-bottom: 14px; }
 .howto { justify-content: flex-start; padding-top: 34%; background: rgba(26,15,46,.22); }
 .howto b { font-size: 20px; }
+.phone.howto .hud-top { display: none; }

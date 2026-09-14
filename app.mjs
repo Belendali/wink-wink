@@ -115,7 +115,7 @@ function makeChart() {
 
 // ---------- flow ----------
 function show(id, on = true) { $(id).classList.toggle('hidden', !on); }
-function setMode(m) { mode = m; $('phone').classList.toggle('setup', m === 'setup'); show('startPanel', m === 'idle'); show('setupPanel', m === 'setup'); show('hud', ['playing', 'countdown', 'setup', 'howto'].includes(m)); show('resultPanel', m === 'result'); show('countdown', m === 'countdown'); show('howto', m === 'howto'); }
+function setMode(m) { mode = m; $('phone').classList.toggle('setup', m === 'setup'); $('phone').classList.toggle('howto', m === 'howto'); show('startPanel', m === 'idle'); show('setupPanel', m === 'setup'); show('hud', ['playing', 'countdown', 'setup', 'howto'].includes(m)); show('resultPanel', m === 'result'); show('countdown', m === 'countdown'); show('howto', m === 'howto'); }
 
 $('play').onclick = () => { ensureAudio(); practice = false; $('phone').classList.remove('practice'); startSetup(); };
 $('practice').onclick = () => { ensureAudio(); practice = true; $('phone').classList.add('practice'); bothMode = false; stopCamera(); beginCountdown(); };
