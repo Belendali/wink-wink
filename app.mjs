@@ -22,7 +22,7 @@ const IMG = {};
 function loadImg(src) { if (IMG[src]) return IMG[src]; const i = new Image(); i.src = src; IMG[src] = i; return i; }
 PEOPLE.forEach((p) => Object.values(p).forEach(loadImg));
 const ready = (src) => { const i = IMG[src]; return i && i.complete && i.naturalWidth > 0; };
-const PERSON_H = 170;
+const PERSON_H = 145;
 function sprite(src, x, baseY, opts = {}) {
   const img = loadImg(src); if (!ready(src)) return false;
   const h = PERSON_H * (opts.scale || 1), w = h * img.naturalWidth / img.naturalHeight;
@@ -55,20 +55,34 @@ function noise(t, dur, gain = 0.08) {
   f.type = 'highpass'; f.frequency.value = 6000; s.buffer = b; g.gain.value = gain;
   s.connect(f).connect(g).connect(audioCtx.destination); s.start(t);
 }
-const BASS = [55, 55, 82, 73, 55, 55, 98, 82];
-const MELODY = [523, 659, 784, 659, 587, 523, 659, 0, 523, 784, 880, 784, 659, 587, 523, 0];
+const BASS = [55, 0, 55, 82, 0, 55, 73, 98];          // per 8th note, two beats
+const CHORDS = [[262, 330, 392], [294, 349, 440], [330, 392, 494], [294, 349, 440]];
+const MELODY = [523, 0, 659, 784, 0, 659, 587, 0, 523, 659, 0, 784, 880, 0, 784, 659, 587, 0, 523, 0, 659, 0, 523, 0, 587, 659, 0, 587, 523, 0, 0, 0];
 function scheduleBeats() {
-  const now = audioCtx.currentTime;
+  const now = audioCtx.currentTime, step = BEAT / 4; // 16th notes
   while (nextBeat < now + 0.25) {
-    const i = beatIndex;
-    tone(150, nextBeat, 0.18, 'sine', 0.5, 45);                 // kick
-    noise(nextBeat + BEAT / 2, 0.05);                             // hat
-    if (i % 2 === 1) noise(nextBeat, 0.12, 0.12);                 // snare-ish
-    tone(BASS[i % 8], nextBeat, BEAT * 0.9, 'square', 0.06);      // bass
-    const m = MELODY[i % 16]; if (m) tone(m, nextBeat, 0.25, 'triangle', 0.07); const m2 = MELODY[(i * 2 + 1) % 16]; if (m2 && i % 2) tone(m2 * 0.5, nextBeat + BEAT / 2, 0.18, 'triangle', 0.04);
-    nextBeat += BEAT; beatIndex++;
+    const i = beatIndex, beat = Math.floor(i / 4), sub = i % 4, eighth = Math.floor(i / 2);
+    if (sub === 0) tone(150, nextBeat, 0.16, 'sine', 0.55, 40);                        // kick on every beat
+    if (sub === 0 && beat % 2 === 1) { noise(nextBeat, 0.14, 0.16); tone(180, nextBeat, 0.08, 'triangle', 0.15); } // snare on 2 and 4
+    noise(nextBeat, sub % 2 ? 0.03 : 0.05, sub === 2 ? 0.09 : 0.045);                 // 16th hats, open on the offbeat
+    if (sub % 2 === 0) { const bnote = BASS[eighth % 8]; if (bnote) tone(bnote, nextBeat, step * 1.6, 'square', 0.07); }
+    if (sub === 2 && beat % 2 === 0) CHORDS[Math.floor(beat / 2) % 4].forEach((f) => tone(f, nextBeat, 0.12, 'sawtooth', 0.025)); // offbeat stab
+    if (sub % 2 === 0) { const m = MELODY[eighth % 32]; if (m) tone(m, nextBeat, 0.22, 'triangle', 0.075); }
+    nextBeat += step; beatIndex++;
   }
   schedulerId = setTimeout(scheduleBeats, 60);
+}
+// character voices: a cartoon "aah" shaped by age and gender
+const VOICES = { youngF: { f: 620, slide: 480, wob: 7, type: 'sine', dur: 0.5 }, adultF: { f: 480, slide: 380, wob: 5, type: 'sine', dur: 0.55 }, granny: { f: 400, slide: 330, wob: 11, type: 'triangle', dur: 0.6 }, youngM: { f: 260, slide: 200, wob: 5, type: 'triangle', dur: 0.45 }, bigM: { f: 170, slide: 120, wob: 4, type: 'sawtooth', dur: 0.6 }, grandpa: { f: 210, slide: 150, wob: 12, type: 'triangle', dur: 0.65 }, kid: { f: 760, slide: 640, wob: 9, type: 'sine', dur: 0.35 } };
+const CAST_VOICE = ['youngF', 'granny', 'youngM', 'bigM', 'youngF', 'adultF', 'grandpa', 'youngM', 'kid', 'youngF']; // p01..p10
+function voice(who, big = false) {
+  if (!audioCtx) return; const v = VOICES[CAST_VOICE[who % CAST_VOICE.length]], t = audioCtx.currentTime;
+  const o = audioCtx.createOscillator(), g = audioCtx.createGain(), lfo = audioCtx.createOscillator(), lg = audioCtx.createGain(), f = audioCtx.createBiquadFilter();
+  o.type = v.type; o.frequency.setValueAtTime(v.f * (big ? 1.15 : 1), t); o.frequency.exponentialRampToValueAtTime(v.slide, t + v.dur);
+  lfo.frequency.value = v.wob; lg.gain.value = v.f * 0.04; lfo.connect(lg).connect(o.frequency);
+  f.type = 'lowpass'; f.frequency.value = v.f * 4;
+  g.gain.setValueAtTime(0.0001, t); g.gain.exponentialRampToValueAtTime(big ? 0.22 : 0.14, t + 0.04); g.gain.exponentialRampToValueAtTime(0.0001, t + v.dur);
+  o.connect(f).connect(g).connect(audioCtx.destination); lfo.start(t); o.start(t); o.stop(t + v.dur + 0.05); lfo.stop(t + v.dur + 0.05);
 }
 function sfx(kind) {
   if (!audioCtx) return; const t = audioCtx.currentTime;
@@ -76,6 +90,7 @@ function sfx(kind) {
   if (kind === 'good') { tone(600, t, 0.08, 'triangle', 0.2, 900); tone(900, t + 0.06, 0.12, 'sine', 0.12); }                            // pop
   if (kind === 'miss') { tone(220, t, 0.18, 'sawtooth', 0.1, 160); tone(160, t + 0.16, 0.25, 'sawtooth', 0.08, 90); }                    // womp womp
   if (kind === 'count') tone(660, t, 0.1, 'square', 0.12);
+  if (kind === 'land') { tone(120, t, 0.08, 'sine', 0.2, 60); noise(t, 0.04, 0.05); }
   if (kind === 'go') tone(990, t, 0.3, 'square', 0.14);
   if (kind === 'win') [523, 659, 784, 1047].forEach((f, i) => tone(f, t + i * 0.12, 0.4, 'triangle', 0.16));
 }
@@ -107,7 +122,7 @@ $('practice').onclick = () => { ensureAudio(); practice = true; $('phone').class
 $('startRound').onclick = () => beginCountdown();
 $('bothMode').onclick = () => { bothMode = true; beginCountdown(); };
 $('replay').onclick = () => beginCountdown();
-$('home').onclick = () => { clearTimeout(beginCountdown.t); stopCamera(); setMode('idle'); };
+$('home').onclick = () => { clearTimeout(beginCountdown.t); clearTimeout(endRound.t); stopCamera(); setMode('idle'); };
 
 async function startSetup() {
   setMode('setup'); show('calib', false); show('startRound', false); show('bothMode', false);
@@ -154,9 +169,12 @@ function endRound() {
   $('rPct').textContent = pct + '%'; $('rLine').textContent = hits + ' of ' + total + ' swept off their feet';
   $('resultTitle').textContent = pct >= 90 ? 'Irresistible.' : pct >= 70 ? 'Dangerous charm.' : pct >= 40 ? 'Getting there.' : 'They called security.';
   $('replay').textContent = pct >= 70 ? 'Do it again' : 'One more round';
-  // everyone you met falls from the sky and piles up
-  pile = []; let i = 0;
-  for (const n of notes) { const lanes = n.lane === 2 ? [0, 1] : [n.lane]; for (const l of lanes) { const who = l === 1 && n.lane === 2 ? n.who2 : n.who; const fell = n.hit === 'perfect' || n.hit === 'good'; pile.push({ who, fell, x: 40 + Math.random() * (W - 80), y: -200 - Math.random() * 200, gy: H * (0.62 + Math.random() * 0.33), vy: 0, rot: (Math.random() - .5) * 0.4, spin: (Math.random() - .5) * 6, delay: i * 0.08 + Math.random() * 0.2, landed: false }); i++; } }
+  // everyone you swept off their feet drops in from the top and lines up, no overlaps
+  pile = []; const fallen = [];
+  for (const n of notes) { if (!(n.hit === 'perfect' || n.hit === 'good')) continue; const lanes = n.lane === 2 ? [0, 1] : [n.lane]; for (const l of lanes) fallen.push(l === 1 && n.lane === 2 ? n.who2 : n.who); }
+  const cols = 4, cell = W / cols, rowH = PERSON_H * 0.62 + 6;
+  fallen.forEach((who, i) => { const row = Math.floor(i / cols), col = i % cols, offset = row % 2 ? cell / 2 : 0; const x = Math.min(W - cell / 2, offset + (col + 0.5) * cell); pile.push({ who, x, y: -220 - Math.random() * 120, gy: H * 0.97 - row * rowH, vy: 0, rot: 0, delay: 0.6 + i * 0.12, landed: false, squash: 0 }); });
+  show('rbtns', false); clearTimeout(endRound.t); endRound.t = setTimeout(() => show('rbtns'), 5000);
   resultAt = performance.now();
   confetti = Array.from({ length: 90 }, () => ({ x: Math.random() * W, y: -Math.random() * H, vx: (Math.random() - .5) * 40, vy: 80 + Math.random() * 120, r: 4 + Math.random() * 5, c: ['#ff5c8a', '#ffb3c8', '#b58cff', '#ffe052', '#fff7fb'][Math.floor(Math.random() * 5)], a: Math.random() * TAU }));
   confettiAt = resultAt;
@@ -178,6 +196,7 @@ function fire(lane) {
   stats[grade]++; stats.combo++; stats.maxCombo = Math.max(stats.maxCombo, stats.combo); stats.score += grade === 'perfect' ? 100 : 60;
   effects.push({ kind: grade, lane: best.lane, at: t });
   judge(grade === 'perfect' ? 'PERFECT' : 'GOOD'); sfx(grade); shootHearts(best.lane, grade === 'perfect' ? 8 : 4, true);
+  voice(best.who, grade === 'perfect'); if (best.lane === 2) setTimeout(() => voice(best.who2, grade === 'perfect'), 90);
   if (grade === 'perfect' && (!faceBest || Math.random() < 0.4)) faceBest = grabFace();
   updateHud();
 }
@@ -274,8 +293,10 @@ function drawInner() {
     const t = (performance.now() - resultAt) / 1000;
     for (const p of pile) {
       if (t < p.delay) continue;
-      if (!p.landed) { p.vy += 1400 * dt; p.y += p.vy * dt; p.rot += p.spin * dt; if (p.y >= p.gy) { p.y = p.gy; p.landed = true; p.rot = p.fell ? (p.rot > 0 ? 1 : -1) * (Math.PI / 2 + (Math.random() - .5) * 0.3) : (Math.random() - .5) * 0.5; } }
-      sprite(p.fell ? PEOPLE[p.who].down : PEOPLE[p.who].walk, p.x, p.y, { rot: p.rot, scale: 0.8, alpha: p.fell ? 1 : 0.55 });
+      if (!p.landed) { p.vy += 1600 * dt; p.y += p.vy * dt; if (p.y >= p.gy) { p.y = p.gy; p.landed = true; p.squash = 1; sfx('land'); } }
+      else p.squash = Math.max(0, p.squash - dt * 4);
+      const sq = p.squash * 0.18; ctx.save(); ctx.translate(p.x, p.y); ctx.scale(1 + sq, 1 - sq); ctx.translate(-p.x, -p.y);
+      sprite(PEOPLE[p.who].down, p.x, p.y, { scale: 0.62 }); ctx.restore();
     }
     const dtc = (performance.now() - confettiAt) / 1000;
     for (const c of confetti) { const y = c.y + c.vy * dtc, x = c.x + c.vx * dtc + Math.sin(dtc * 3 + c.a) * 12; if (y > H + 10) continue; ctx.save(); ctx.translate(x, y); ctx.rotate(c.a + dtc * 4); ctx.fillStyle = c.c; ctx.fillRect(-c.r / 2, -c.r, c.r, c.r * 2); ctx.restore(); }
