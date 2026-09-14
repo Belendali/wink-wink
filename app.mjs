@@ -168,7 +168,6 @@ function endRound() {
   const total = notes.length, hits = stats.perfect + stats.good, pct = total ? Math.round(hits / total * 100) : 0;
   $('rPct').textContent = pct + '%'; $('rLine').textContent = hits + ' of ' + total + ' swept off their feet';
   $('resultTitle').textContent = pct >= 90 ? 'Irresistible.' : pct >= 70 ? 'Dangerous charm.' : pct >= 40 ? 'Getting there.' : 'They called security.';
-  $('replay').textContent = pct >= 70 ? 'Do it again' : 'One more round';
   // everyone you swept off their feet drops in from the top and lines up, no overlaps
   pile = []; const fallen = [];
   for (const n of notes) { if (!(n.hit === 'perfect' || n.hit === 'good')) continue; const lanes = n.lane === 2 ? [0, 1] : [n.lane]; for (const l of lanes) fallen.push(l === 1 && n.lane === 2 ? n.who2 : n.who); }

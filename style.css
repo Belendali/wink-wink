@@ -62,8 +62,8 @@ h2 { font-size: 24px; margin: 8px 0 8px; }
 .rhead b { display: block; font-size: 92px; line-height: 1; font-weight: 900; }
 .rhead > span { display: block; font-size: 13px; letter-spacing: .22em; text-transform: uppercase; opacity: .9; margin-top: 6px; }
 .rhead em { display: block; font-style: normal; font-size: 26px; font-weight: 800; margin-top: 10px; color: #ffe052; }
-.rbtns { position: absolute; left: 17%; right: 17%; bottom: 24%; pointer-events: auto; display: flex; flex-direction: column; align-items: center; } /* web-only controls, kept inside the core zone */
-.rbtns .link { color: #fff; margin-top: 8px; }
+.rbtns { position: absolute; left: 17%; right: 17%; top: 48%; pointer-events: auto; display: flex; flex-direction: column; align-items: center; } /* web-only controls, kept inside the core zone */
+.rbtns .link { color: rgba(255,255,255,.7); margin-top: 6px; font-size: 12px; }
 
 .replay { width: 72px; height: 72px; border-radius: 50%; border: 3px solid #fff; background: rgba(26,15,46,.35); display: flex; align-items: center; justify-content: center; cursor: pointer; animation: howin .4s ease-out; box-shadow: 0 8px 24px rgba(0,0,0,.35); }
 .replay:active { transform: scale(.94); }
