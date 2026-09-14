@@ -4,7 +4,7 @@ const video = $('cam'), canvas = $('scene'), ctx = canvas.getContext('2d');
 const W = 390; let H = 693, DPR = 1;
 const BPM = 88, BEAT = 60 / BPM, SONG = 15, LEAD = 1.8;
 const PERFECT = 0.15, GOOD = 0.3;
-const LANE_X = [W * 0.28, W * 0.72], HIT_Y = 0.74;
+const LANE_X = [W * 0.28, W * 0.72], HIT_Y = 0.68; // judge line: a whole character at the hit moment stays inside the visual zone (y ≤ 545/694)
 
 let mode = 'idle'; // idle | setup | countdown | playing | result
 let practice = false, bothMode = false;
