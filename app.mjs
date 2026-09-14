@@ -46,7 +46,11 @@ function checkSize() { // mobile browsers settle their viewport after load; keep
 }
 
 // ---------- audio (synthesized) ----------
-function ensureAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); }
+function ensureAudio() { if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)(); if (audioCtx.state === 'suspended') audioCtx.resume(); loadStingers(); }
+// result-page stingers: shared with the salon game so the whole set ends on the same note
+const STINGER_SRC = { great: 'assets/audio/ending-great.mp3' }, stingerBuf = {};
+function loadStingers() { for (const [k, src] of Object.entries(STINGER_SRC)) { if (stingerBuf[k]) continue; stingerBuf[k] = 'loading'; fetch(src).then((r) => r.arrayBuffer()).then((b) => audioCtx.decodeAudioData(b)).then((buf) => { stingerBuf[k] = buf; }).catch(() => { delete stingerBuf[k]; }); } }
+function stinger(k, gain = 1, delay = 0) { const buf = stingerBuf[k]; if (!buf || buf === 'loading') return false; const s = audioCtx.createBufferSource(); s.buffer = buf; const g = audioCtx.createGain(); g.gain.value = gain; s.connect(g).connect(audioCtx.destination); s.start(audioCtx.currentTime + delay); return true; }
 function tone(freq, t, dur, type = 'sine', gain = 0.2, slide = 0) {
   const o = audioCtx.createOscillator(), g = audioCtx.createGain();
   o.type = type; o.frequency.setValueAtTime(freq, t); if (slide) o.frequency.exponentialRampToValueAtTime(slide, t + dur);
@@ -184,6 +188,7 @@ function startNow() { // camera flow: the first wink is the start button, no cou
 function endRound() {
   clearTimeout(schedulerId); setMode('result'); sfx('win');
   const total = notes.length, hits = stats.perfect + stats.good, pct = total ? Math.round(hits / total * 100) : 0;
+  if (pct >= 50) stinger('great', 1, 0.15);
   $('rPct').textContent = pct + '%'; $('rLine').textContent = hits + ' of ' + total + ' swept off their feet';
   $('resultTitle').textContent = pct >= 90 ? 'Irresistible.' : pct >= 70 ? 'Dangerous charm.' : pct >= 40 ? 'Getting there.' : 'They called security.';
   // the people you swept off their feet, one at a time, big, half in frame, swaying
