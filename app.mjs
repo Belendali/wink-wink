@@ -100,7 +100,7 @@ function makeChart() {
   const list = []; let seed = 7; const rnd = () => (seed = (seed * 9301 + 49297) % 233280) / 233280;
   const beats = Math.floor(SONG / BEAT);
   let lane = 0, lastDouble = -9;
-  for (let b = 2; b < beats - 1; b++) {
+  for (let b = 4; b < beats - 1; b++) {   // first pedestrian arrives ~2.7 s after GO, a full walk down
     const t = b * BEAT;
     if (b % 8 === 7) { list.push({ t, lane: 2 }); continue; }                       // a couple every 8 beats: both eyes
     if (b >= 12 && b - lastDouble > 3 && rnd() < 0.3) {                             // an occasional quick pair, late in the round
@@ -185,12 +185,13 @@ function endRound() {
 // ---------- input ----------
 function fire(lane) {
   if (mode !== 'playing') return;
-  const t = songTime; let best = null, bestD = GOOD + 1e-9;
+  const t = songTime; let best = null, bestD = GOOD * 1.5 + 1e-9;
   for (const n of notes) {
     if (n.hit) continue;
+    const win = n.id < 2 ? GOOD * 1.5 : GOOD; // warm-up: the first two are forgiving
     if (!bothMode && !(n.lane === lane || (n.lane === 2 && lane === 2))) continue;
     if (!bothMode && n.lane === 2 && lane !== 2) continue;
-    const d = Math.abs(n.t - t); if (d < bestD) { bestD = d; best = n; }
+    const d = Math.abs(n.t - t); if (d <= win && d < bestD) { bestD = d; best = n; }
   }
   if (!best) return;
   const grade = bestD <= PERFECT ? 'perfect' : 'good';
@@ -360,6 +361,7 @@ function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.a
 // ---------- loop ----------
 function loop() {
   requestAnimationFrame(loop);
+  if (mode === 'playing') songTime = audioCtx.currentTime - startAt;
   if (landmarker && stream && video.readyState >= 2 && video.currentTime !== lastVideoTime && ['setup', 'howto', 'playing', 'countdown'].includes(mode)) {
     lastVideoTime = video.currentTime;
     try {
@@ -377,7 +379,7 @@ function loop() {
   }
   if (mode === 'playing') {
     songTime = audioCtx.currentTime - startAt;
-    for (const n of notes) if (!n.hit && songTime - n.t > GOOD) missNote(n);
+    for (const n of notes) if (!n.hit && songTime - n.t > (n.id < 2 ? GOOD * 1.5 : GOOD)) missNote(n);
     $('time').textContent = Math.max(0, Math.ceil(SONG - songTime));
     if (songTime > SONG + 0.6) endRound();
   }
