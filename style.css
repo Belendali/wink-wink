@@ -1,0 +1,46 @@
+:root { --bg: #1a0f2e; --card: #fff7fb; --ink: #2a1740; --dim: #7a6690; --pink: #ff5c8a; --pink2: #ffb3c8; --lav: #b58cff; --yellow: #ffe052; --line: rgba(42,23,64,.12); }
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: -apple-system, "Helvetica Neue", Inter, system-ui, sans-serif; overflow: hidden; }
+#app { height: 100%; display: flex; align-items: center; justify-content: center; }
+.phone { position: relative; width: min(100vw, calc(100vh * 9 / 16)); height: min(100vh, calc(100vw * 16 / 9)); overflow: hidden; background: #2a1740; }
+.cam { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; transform: scaleX(-1); filter: saturate(.9); }
+.scene { position: absolute; inset: 0; width: 100%; height: 100%; }
+.hidden { display: none !important; }
+
+.hud { position: absolute; inset: 0; pointer-events: none; }
+.hud-top { position: absolute; left: 0; right: 0; top: max(14px, env(safe-area-inset-top)); display: flex; justify-content: space-between; padding: 0 18px; }
+.hud-top > div { background: rgba(26,15,46,.55); backdrop-filter: blur(8px); border-radius: 14px; padding: 8px 12px; color: #fff; text-align: center; min-width: 74px; }
+.hud-top b { display: block; font-size: 22px; line-height: 1; }
+.hud-top span { font-size: 10px; letter-spacing: .18em; text-transform: uppercase; opacity: .7; }
+.judge { position: absolute; left: 0; right: 0; top: 46%; text-align: center; font-weight: 900; font-size: 34px; color: #fff; text-shadow: 0 2px 0 #2a1740, 0 0 18px rgba(255,92,138,.7); opacity: 0; transform: scale(.8); transition: opacity .15s, transform .15s; }
+.judge.show { opacity: 1; transform: scale(1); }
+.eyes { position: absolute; left: 0; right: 0; bottom: max(18px, env(safe-area-inset-bottom)); display: flex; justify-content: center; gap: 14px; }
+.eye { width: 44px; height: 44px; border-radius: 50%; background: rgba(255,255,255,.18); border: 2px solid rgba(255,255,255,.5); color: #fff; display: flex; align-items: center; justify-content: center; font-weight: 700; transition: background .08s, transform .08s; }
+.eye.on { background: var(--pink); transform: scale(1.15); border-color: #fff; }
+
+.panel { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; padding: 22px; background: rgba(26,15,46,.35); }
+.card { background: var(--card); border-radius: 22px; padding: 24px 22px; width: 100%; max-width: 360px; text-align: center; box-shadow: 0 24px 60px rgba(0,0,0,.35); }
+.kicker { font-size: 11px; letter-spacing: .3em; color: var(--pink); font-weight: 700; }
+h1 { font-size: 30px; margin: 8px 0 8px; letter-spacing: -.01em; }
+h2 { font-size: 24px; margin: 8px 0 8px; }
+.card p { margin: 0 0 16px; color: var(--dim); font-size: 14px; line-height: 1.5; }
+.card p b { color: var(--ink); }
+.btn { display: block; width: 100%; background: var(--pink); color: #fff; border: 0; border-radius: 14px; padding: 14px; font-size: 17px; font-weight: 700; cursor: pointer; }
+.btn:active { transform: scale(.98); }
+.link { background: none; border: 0; color: var(--dim); text-decoration: underline; font-size: 14px; margin-top: 12px; cursor: pointer; }
+.tiny { font-size: 12px !important; margin: 10px 0 0 !important; }
+.calib { margin: 8px 0 16px; text-align: left; }
+.calib-row { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid var(--line); font-size: 14px; }
+.calib-row i { width: 14px; height: 14px; border-radius: 50%; background: #ddd; }
+.calib-row i.ok { background: #4ec9b0; }
+
+.countdown { position: absolute; inset: 0; display: flex; align-items: center; justify-content: center; font-size: 140px; font-weight: 900; color: #fff; text-shadow: 0 6px 0 #2a1740; pointer-events: none; }
+
+.result .stats { display: flex; gap: 10px; margin: 6px 0 14px; }
+.result .stats div { flex: 1; background: #fff; border: 1px solid var(--line); border-radius: 14px; padding: 10px 6px; }
+.result .stats b { display: block; font-size: 22px; }
+.result .stats span { font-size: 10px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); }
+.faces { display: flex; gap: 12px; justify-content: center; margin-bottom: 16px; }
+.faces div { text-align: center; }
+.faces canvas { width: 120px; height: 150px; border-radius: 14px; background: #eee; display: block; border: 3px solid #fff; box-shadow: 0 6px 18px rgba(0,0,0,.15); }
+.faces span { font-size: 11px; letter-spacing: .14em; text-transform: uppercase; color: var(--dim); display: block; margin-top: 6px; }

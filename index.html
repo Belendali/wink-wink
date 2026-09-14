@@ -1,0 +1,75 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover, user-scalable=no" />
+<meta name="theme-color" content="#1a0f2e" />
+<title>Wink Wink</title>
+<link rel="icon" href="data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 40 40'%3E%3Crect width='40' height='40' rx='12' fill='%23ff5c8a'/%3E%3Ctext x='20' y='29' text-anchor='middle' font-size='26'%3E%F0%9F%98%89%3C/text%3E%3C/svg%3E" />
+<link rel="stylesheet" href="./style.css?v=1" />
+</head>
+<body>
+<main id="app">
+  <section id="phone" class="phone">
+    <video id="cam" class="cam" autoplay muted playsinline></video>
+    <canvas id="scene" class="scene"></canvas>
+
+    <div id="hud" class="hud hidden">
+      <div class="hud-top">
+        <div class="score"><b id="score">0</b><span>charm</span></div>
+        <div class="combo"><b id="combo">0</b><span>combo</span></div>
+        <div class="time"><b id="time">20</b><span>sec</span></div>
+      </div>
+      <div id="judge" class="judge"></div>
+      <div class="eyes"><span id="eyeL" class="eye">L</span><span id="eyeR" class="eye">R</span></div>
+    </div>
+
+    <div id="startPanel" class="panel">
+      <div class="card">
+        <div class="kicker">WINK WINK</div>
+        <h1>Wink to the beat.</h1>
+        <p>People walk by on both sides. Close your <b>left eye</b> for the left lane, your <b>right eye</b> for the right. Both eyes for the big ones.</p>
+        <button id="play" class="btn">Let's play</button>
+        <p class="tiny">Allow the camera. Everything stays on your device.</p>
+        <button id="practice" class="link">Try tap practice</button>
+      </div>
+    </div>
+
+    <div id="setupPanel" class="panel hidden">
+      <div class="card">
+        <div class="kicker" id="setupKicker">CAMERA</div>
+        <h2 id="setupTitle">Loading the face tracker…</h2>
+        <p id="setupText">One second.</p>
+        <div id="calib" class="calib hidden">
+          <div class="calib-row"><span>Left eye</span><i id="calL"></i></div>
+          <div class="calib-row"><span>Right eye</span><i id="calR"></i></div>
+        </div>
+        <button id="startRound" class="btn hidden">Start</button>
+        <button id="bothMode" class="link hidden">I can't wink. Use both eyes.</button>
+      </div>
+    </div>
+
+    <div id="countdown" class="countdown hidden"></div>
+
+    <div id="resultPanel" class="panel hidden">
+      <div class="card result">
+        <div class="kicker" id="resultKicker">CHARM REPORT</div>
+        <h2 id="resultTitle">Heartbreaker</h2>
+        <div class="stats">
+          <div><b id="rAcc">0%</b><span>accuracy</span></div>
+          <div><b id="rCombo">0</b><span>max combo</span></div>
+          <div><b id="rDown">0</b><span>swept off feet</span></div>
+        </div>
+        <div class="faces">
+          <div><canvas id="faceBest" width="160" height="200"></canvas><span>Best wink</span></div>
+          <div><canvas id="faceWorst" width="160" height="200"></canvas><span>Worst wink</span></div>
+        </div>
+        <button id="replay" class="btn">One more round</button>
+        <button id="home" class="link">Back</button>
+      </div>
+    </div>
+  </section>
+</main>
+<script type="module" src="./app.mjs?v=1"></script>
+</body>
+</html>
