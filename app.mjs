@@ -185,7 +185,8 @@ function endRound() {
 const DETECT_LAG = 0.04; // small camera + model latency, seconds
 function fire(lane, at = songTime) {
   if (mode !== 'playing') return;
-  const t = at, t2 = songTime; // closure start vs confirmation: judge by whichever is closer to the note let best = null, bestD = GOOD * 1.5 + 1e-9;
+  const t = at, t2 = songTime; // closure start vs confirmation: judge by whichever is closer to the note
+  let best = null, bestD = GOOD * 1.5 + 1e-9;
   for (const n of notes) {
     if (n.hit) continue;
     const win = n.id < 2 ? GOOD * 1.5 : GOOD; // warm-up: the first two are forgiving
