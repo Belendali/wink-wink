@@ -2,7 +2,7 @@
 const $ = (id) => document.getElementById(id);
 const video = $('cam'), canvas = $('scene'), ctx = canvas.getContext('2d');
 const W = 390; let H = 693, DPR = 1;
-const BPM = 100, BEAT = 60 / BPM, SONG = 20, LEAD = 1.7;
+const BPM = 100, BEAT = 60 / BPM, SONG = 15, LEAD = 1.7;
 const PERFECT = 0.15, GOOD = 0.3;
 const LANE_X = [W * 0.28, W * 0.72], HIT_Y = 0.74;
 
