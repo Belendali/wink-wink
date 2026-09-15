@@ -422,7 +422,7 @@ function loop() {
           const vw = video.videoWidth, vh = video.videoHeight, s = Math.max(W / vw, H / vh), dw = vw * s, dh = vh * s;
           return { x: (W - dw) / 2 + (1 - lm[i].x) * dw, y: (H - dh) / 2 + lm[i].y * dh }; };
         const mid = (a, b) => { const p = toC(a), q = toC(b); return { x: (p.x + q.x) / 2, y: (p.y + q.y) / 2 }; };
-        eyePos = { L: mid(159, 145), R: mid(386, 374) }; }
+        eyePos = { L: mid(386, 374), R: mid(159, 145) }; }
       if (bs) { const get = (name) => (bs.categories.find((c) => c.categoryName === name) || {}).score || 0; handleEyes(get('eyeBlinkLeft'), get('eyeBlinkRight')); }
 
     } catch (e) { /* skip frame */ }
