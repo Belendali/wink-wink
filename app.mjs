@@ -134,7 +134,7 @@ $('practice').onclick = () => { ensureAudio(); practice = true; $('phone').class
 $('startRound').onclick = () => beginCountdown();
 $('bothMode').onclick = () => { bothMode = true; beginCountdown(); };
 $('replay').onclick = () => showHowto();
-$('home').onclick = () => { clearTimeout(beginCountdown.t); clearTimeout(endRound.t); stopCamera(); setMode('idle'); };
+$('home').onclick = () => { clearTimeout(beginCountdown.t); clearTimeout(endRound.t); clearInterval(showHowto.iv); stopCamera(); setMode('idle'); };
 
 async function startSetup() {
   setMode('setup'); show('calib', false); show('startRound', false); show('bothMode', false);
@@ -163,10 +163,12 @@ async function startCamera() {
 function stopCamera() { if (stream) { stream.getTracks().forEach((t) => t.stop()); stream = null; video.srcObject = null; } }
 
 function showHowto() {
-  ensureAudio(); setMode('howto'); clearTimeout(beginCountdown.t);
-  $('howtoCta').textContent = practice ? 'Starting…' : 'Blink to start';
-  if (practice) beginCountdown.t = setTimeout(startCountdown, 2000);   // no camera: just wait
-  // camera: the first detected blink starts the round, which also proves tracking is live
+  ensureAudio(); setMode('howto'); clearTimeout(beginCountdown.t); clearInterval(showHowto.iv);
+  warm = { step: 0, done: [false, false, false], peaks: [], cur: null, fired: -1, stepAt: performance.now() };
+  EYE = { ...EYE_DEFAULT }; eye.armed = true; eye.pendingAt = 0; warmUi();
+  if (practice) { // no camera: play the three steps by themselves, then count in
+    let k = 0; showHowto.iv = setInterval(() => { warm.done[k] = true; shootHearts(k, 3); k++; warm.step = k; warmUi(); if (k >= 3) { clearInterval(showHowto.iv); beginCountdown.t = setTimeout(startCountdown, 600); } }, 700);
+  }
 }
 function beginCountdown() { showHowto(); }
 function startCountdown() {
@@ -236,30 +238,80 @@ let smL = 0, smR = 0, faceAt = 0;
 let eyePos = { L: null, R: null }; // canvas coords of the player's eyes
 let hearts = [];
 let pulse = [0, 0]; // seconds since the last wink on each lane, for the heartbeat rings
+// Thresholds on baseline-corrected blink scores. Defaults are lenient; the warm-up replaces them with the player's own numbers.
+const EYE_DEFAULT = { single: 0.25, diff: 0.16, both: 0.32, gap: 0.3 };
+let EYE = { ...EYE_DEFAULT }, baseL = null, baseR = null;
+let warm = { step: 0, done: [false, false, false], peaks: [], cur: null, fired: -1, stepAt: 0 };
+const WARM_TEXT = ['Wink your left eye', 'Now your right eye', 'Now close both eyes'];
 function handleEyes(rawL, rawR) {
   faceAt = performance.now();
   smL += (rawL - smL) * 0.5; smR += (rawR - smR) * 0.5;
-  const l = smL, r = smR;
-  const both = l > 0.38 && r > 0.38 && Math.abs(l - r) < 0.3;
-  const L = !both && l > 0.3 && l - r > 0.18;
-  const R = !both && r > 0.3 && r - l > 0.18;
+  if (baseL === null) { baseL = smL; baseR = smR; }
+  const l = Math.max(0, smL - baseL), r = Math.max(0, smR - baseR);
+  const both = l > EYE.both && r > EYE.both && Math.abs(l - r) < EYE.gap;
+  const L = !both && l > EYE.single && l - r > EYE.diff;
+  const R = !both && r > EYE.single && r - l > EYE.diff;
   $('eyeL').classList.toggle('on', L || both); $('eyeR').classList.toggle('on', R || both);
   const now = performance.now();
   const closed = L || R || both;
-  if (!closed) { eye.armed = true; eye.pendingAt = 0; eye.L = eye.R = false; eye.both = false; return; }
+  if (!closed) {
+    // the resting pose: follow drops quickly, rises slowly (squints, glasses, lighting)
+    baseL += (smL - baseL) * (smL < baseL ? 0.3 : 0.02); baseR += (smR - baseR) * (smR < baseR ? 0.3 : 0.02);
+    if (mode === 'howto' && warm.cur && warm.fired >= 0) warmRelease();
+    warm.cur = null; warm.fired = -1;
+    eye.armed = true; eye.pendingAt = 0; eye.L = eye.R = false; eye.both = false; return;
+  }
+  if (mode === 'howto') { if (!warm.cur) warm.cur = { l: 0, r: 0 }; warm.cur.l = Math.max(warm.cur.l, l); warm.cur.r = Math.max(warm.cur.r, r); }
   if (!eye.armed) return;
   if (!eye.pendingAt) eye.pendingAt = now;
   eye.L = eye.L || L; eye.R = eye.R || R; eye.both = eye.both || both;
   if (now - eye.pendingAt >= 70) {
     eye.armed = false;
     const isBoth = eye.both || (eye.L && eye.R);
-    if (mode === 'howto' && !practice) { startNow(); }
-    else if (mode === 'playing') { if (isBoth) blinkStats.both++; else blinkStats.single++; if (!bothMode && blinkStats.both >= 4 && blinkStats.single === 0) { bothMode = true; judge('BOTH EYES MODE'); } const lane = bothMode ? 2 : isBoth ? 2 : eye.L ? 0 : 1; shootHearts(lane, 3); fire(lane); }
+    const lane = isBoth ? 2 : eye.L ? 0 : 1;
+    if (mode === 'howto' && !practice) warmAction(lane);
+    else if (mode === 'playing') { if (isBoth) blinkStats.both++; else blinkStats.single++; if (!bothMode && blinkStats.both >= 4 && blinkStats.single === 0) { bothMode = true; judge('BOTH EYES MODE'); } const fl = bothMode ? 2 : lane; shootHearts(fl, 3); fire(fl); }
     eye.L = eye.R = false; eye.both = false;
   }
 }
+// ---------- warm-up: left, right, both; the game starts only after all three ----------
+function warmUi() {
+  show('warmSkip', false);
+  document.querySelectorAll('#warmSteps i').forEach((el, i) => { el.classList.toggle('done', warm.done[i]); el.classList.toggle('on', i === warm.step && !warm.done[i]); });
+  $('howtoCta').textContent = warm.step < 3 ? WARM_TEXT[warm.step] : 'Let\'s go!';
+}
+function warmAction(lane) {
+  if (warm.step > 2 || warm.fired >= 0) return;
+  if (lane !== warm.step) { // the other move: say which one it was
+    const said = ['That was your left eye', 'That was your right eye', 'That was both eyes'][lane];
+    $('howtoCta').textContent = said; clearTimeout(warmAction.t); warmAction.t = setTimeout(warmUi, 900); return;
+  }
+  warm.fired = lane; warm.done[lane] = true; pulse[lane === 2 ? 0 : lane] = 0; if (lane === 2) pulse = [0, 0];
+  shootHearts(lane, 5, true); sfx('good'); warmUi();
+}
+function warmRelease() { // the eyes opened again: keep the peak of that wink, move on
+  warm.peaks[warm.fired] = { ...warm.cur }; warm.step = warm.done.indexOf(false); if (warm.step < 0) warm.step = 3; warm.stepAt = performance.now();
+  warmUi();
+  if (warm.step === 3) { calibrate(); clearTimeout(beginCountdown.t); beginCountdown.t = setTimeout(() => { if (mode === 'howto') startNow(); }, 700); }
+}
+function warmSkip() { // a tap after the hint: count this step as done and keep the default thresholds
+  if (warm.step > 2) return; warm.done[warm.step] = true; warm.step = warm.done.indexOf(false); if (warm.step < 0) warm.step = 3; warm.stepAt = performance.now(); warmUi();
+  if (warm.step === 3) { clearTimeout(beginCountdown.t); beginCountdown.t = setTimeout(() => { if (mode === 'howto') startNow(); }, 500); }
+}
+function calibrate() {
+  const [pl, pr, pb] = warm.peaks; if (!pl || !pr || !pb) return;
+  const clamp = (v, a, b) => Math.max(a, Math.min(b, v));
+  EYE = {
+    single: clamp(Math.min(pl.l, pr.r) * 0.5, 0.16, 0.3),
+    diff: clamp(Math.min(pl.l - pl.r, pr.r - pr.l) * 0.5, 0.09, 0.2),
+    both: clamp(Math.min(pb.l, pb.r) * 0.55, 0.2, 0.38),
+    gap: clamp(Math.abs(pb.l - pb.r) + 0.15, 0.3, 0.5),
+  };
+  if (DEBUG) dlog(`calibrated single ${EYE.single.toFixed(2)} diff ${EYE.diff.toFixed(2)} both ${EYE.both.toFixed(2)} gap ${EYE.gap.toFixed(2)}`);
+}
 // tap practice: left third = left eye, right third = right eye, middle = both
 $('phone').addEventListener('pointerdown', (e) => {
+  if (mode === 'howto' && !practice && !$('warmSkip').classList.contains('hidden')) { warmSkip(); return; }
   if (mode === 'result' && showcase.length > 1 && !e.target.closest('button')) { showIdx = (showIdx + 1) % showcase.length; showAt = performance.now(); sfx('good'); return; }
   if (!practice || mode !== 'playing') return;
   const r = $('phone').getBoundingClientRect(), x = (e.clientX - r.left) / r.width;
@@ -411,6 +463,7 @@ function roundRect(x, y, w, h, r) { ctx.beginPath(); ctx.moveTo(x + r, y); ctx.a
 // ---------- loop ----------
 function loop() {
   requestAnimationFrame(loop); checkSize();
+  if (mode === 'howto' && !practice && warm.step < 3 && performance.now() - warm.stepAt > 6000) show('warmSkip', true);
   if (mode === 'playing') songTime = audioCtx.currentTime - startAt;
   if (landmarker && stream && video.readyState >= 2 && video.currentTime !== lastVideoTime && ['setup', 'howto', 'playing', 'countdown'].includes(mode)) {
     lastVideoTime = video.currentTime;
@@ -436,3 +489,4 @@ function loop() {
   draw();
 }
 setMode('idle'); loop();
+if (DEBUG) window.__wink = { handleEyes, showHowto, get mode() { return mode; }, get EYE() { return EYE; }, get warm() { return warm; } }; // test hook, debug only
