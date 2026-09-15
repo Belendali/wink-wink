@@ -100,10 +100,7 @@ async function startSetup() {
   } catch (e) {
     $('setupTitle').textContent = 'Camera blocked'; $('setupText').textContent = 'Allow the camera in your browser, then reload. Or try tap practice.'; return;
   }
-  $('setupKicker').textContent = 'QUICK CHECK'; $('setupTitle').textContent = 'Wink at me.'; $('setupText').textContent = 'Close one eye at a time. Keep the other open.';
-  calib = { L: false, R: false, startedAt: performance.now() }; $('calL').classList.remove('ok'); $('calR').classList.remove('ok');
-  show('calib'); bothMode = false;
-  setTimeout(() => { if (mode === 'setup' && !(calib.L && calib.R)) show('bothMode'); }, 6000);
+  bothMode = false; beginCountdown(); // no quick check: camera ready goes straight into the count-in
 }
 async function loadLandmarker() {
   if (landmarker) return;
